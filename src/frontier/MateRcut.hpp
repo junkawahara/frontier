@@ -29,7 +29,7 @@ namespace frontier_dd {
 //*************************************************************************************************
 // MateConfRcut
 struct MateConfRcut {
-    int number_of_cuts;
+    double number_of_cuts;
 };
 
 //*************************************************************************************************
@@ -37,9 +37,9 @@ struct MateConfRcut {
 class StateRcut : public StateForestBase<MateConfRcut> {
 private:
     RootManager* root_mgr_;
-    int max_cut_size_;
+    double max_cut_size_;
 public:
-    StateRcut(Graph* graph, int max_cut_size);
+    StateRcut(Graph* graph, double max_cut_size);
     virtual ~StateRcut();
 
     const RootManager* GetRootManager() const
@@ -52,7 +52,7 @@ public:
         root_mgr_ = root_mgr;
     }
 
-    int GetMaxCutSize() const
+    double GetMaxCutSize() const
     {
         return max_cut_size_;
     }
@@ -63,8 +63,6 @@ public:
 //*************************************************************************************************
 // MateRcut: mate を表すクラス
 class MateRcut : public MateForestBase<MateConfRcut> {
-private:
-    int number_of_cuts_;
 public:
     MateRcut(State* state);
 

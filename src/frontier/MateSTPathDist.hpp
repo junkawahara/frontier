@@ -29,7 +29,7 @@ namespace frontier_dd {
 //*************************************************************************************************
 // MateConfSTPathDist
 struct MateConfSTPathDist {
-    int distance;
+    double sum;
 };
 
 class MateSTPathDist;

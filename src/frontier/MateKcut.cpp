@@ -26,7 +26,7 @@ using namespace std;
 
 //*************************************************************************************************
 // StateKcut
-StateKcut::StateKcut(Graph* graph, int max_cut_size) : StateForestBase<MateConfKcut>(graph),
+StateKcut::StateKcut(Graph* graph, double max_cut_size) : StateForestBase<MateConfKcut>(graph),
     max_cut_size_(max_cut_size)
 {
     // delete the instance of MateForestBase created in the constructor of StateForestBase
@@ -88,7 +88,7 @@ void MateKcut::Update(State* state, int child_num)
             }
         }
     } else { // Hi枝処理
-        ++conf_.number_of_cuts;
+        conf_.number_of_cuts += edge.weight;
     }
 
     // 頂点がフロンティアから抜けるときの処理

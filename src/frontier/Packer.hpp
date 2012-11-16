@@ -36,9 +36,17 @@ public:
     void Initialize(const T& initial_conf)
     {
         // for 0/1-terminal and root node
-        byte* p = fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T) * 3);
-        memcpy(p + sizeof(T) * 2, &initial_conf, sizeof(T)); // copy root node
-        fixed_buffer_.SeekTail(sizeof(T) * 2); // skip 0/1-terminal
+        fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
+        fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
+        byte* p = fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
+        memcpy(p, &initial_conf, sizeof(T)); // copy root node
+        fixed_buffer_.SeekTail(sizeof(T));
+        fixed_buffer_.SeekTail(sizeof(T));
+
+
+        //byte* p = fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T) * 3);
+        //memcpy(p + sizeof(T) * 2, &initial_conf, sizeof(T)); // copy root node
+        //fixed_buffer_.SeekTail(sizeof(T) * 2); // skip 0/1-terminal
     }
 
     bool Equals(const ZDDNode& node1, const ZDDNode& node2) const

@@ -27,19 +27,19 @@ namespace frontier_dd {
 
 struct MateConfKcut {
     int number_of_components;
-    int number_of_cuts;
+    double number_of_cuts;
 };
 
 //*************************************************************************************************
 // StateKcut: 高々 k 本の辺からなるカットのための State
 class StateKcut : public StateForestBase<MateConfKcut> {
 private:
-    int max_cut_size_;
+    double max_cut_size_;
 public:
-    StateKcut(Graph* graph, int max_cut_size);
+    StateKcut(Graph* graph, double max_cut_size);
     ~StateKcut();
 
-    int GetMaxCutSize() const
+    double GetMaxCutSize() const
     {
         return max_cut_size_;
     }

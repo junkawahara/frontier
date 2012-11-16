@@ -26,7 +26,7 @@ using namespace std;
 
 //*************************************************************************************************
 // StateRcut
-StateRcut::StateRcut(Graph* graph, int max_cut_size) : StateForestBase<MateConfRcut>(graph),
+StateRcut::StateRcut(Graph* graph, double max_cut_size) : StateForestBase<MateConfRcut>(graph),
     max_cut_size_(max_cut_size)
 {
     // delete the instance of MateForestBase created in the constructor of StateForestBase
@@ -94,7 +94,7 @@ void MateRcut::Update(State* state, int child_num)
             }
         }
     } else { // Hi枝の処理
-        ++conf_.number_of_cuts;
+        conf_.number_of_cuts += edge.weight;
     }
 }
 

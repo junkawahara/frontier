@@ -35,7 +35,7 @@ StateSTPathDist::StateSTPathDist(Graph* graph) : StateFrontierFixed<MateConfSTPa
     global_mate_ = new MateSTPathDist(this);
 
     MateConfSTPathDist initial_conf;
-    initial_conf.distance = 0;
+    initial_conf.sum = 0;
 
     StateFrontierFixed<MateConfSTPathDist>::Initialize(initial_conf);
 }
@@ -99,7 +99,7 @@ void MateSTPathDist::Update(State* state, int child_num)
     MateSTPath::Update(state, child_num);
 
     if (child_num == 1) {
-        conf_.distance += state->GetCurrentEdge().weight;
+        conf_.sum += state->GetCurrentEdge().weight;
     }
 }
 
@@ -110,7 +110,7 @@ int MateSTPathDist::CheckTerminalPre(State* state, int child_num)
     StateSTPathDist* st = static_cast<StateSTPathDist*>(state);
 
     if (child_num == 1) { // Hi枝のとき
-        if (conf_.distance + state->GetCurrentEdge().weight > st->GetMaxDistance()) {
+        if (conf_.sum + state->GetCurrentEdge().weight > st->GetMaxDistance()) {
             return 0;
         }
     }

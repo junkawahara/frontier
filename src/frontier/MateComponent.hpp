@@ -28,19 +28,19 @@ namespace frontier_dd {
 //*************************************************************************************************
 // MateConfComponent
 struct MateConfComponent {
-    int number_of_components;
+    short number_of_components;
 };
 
 //*************************************************************************************************
 // StateComponent
 class StateComponent : public StateForestBase<MateConfComponent> {
 private:
-    int component_limit_;
+    short component_limit_;
     bool is_le_; // true なら component 数を component_limit_ 以下に制限
     bool is_me_; // true なら component 数を component_limit_ 以上に制限
     // is_le_, is_me_ ともに false なら component 数を component_limit_ に制限
 public:
-    StateComponent(Graph* graph, int component_limit, bool is_le, bool is_me);
+    StateComponent(Graph* graph, short component_limit, bool is_le, bool is_me);
     ~StateComponent();
 
     int GetComponentLimit() const

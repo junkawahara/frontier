@@ -26,7 +26,7 @@ using namespace std;
 
 //*************************************************************************************************
 // StateComponent
-StateComponent::StateComponent(Graph* graph, int component_limit, bool is_le, bool is_me)
+StateComponent::StateComponent(Graph* graph, short component_limit, bool is_le, bool is_me)
     : StateForestBase<MateConfComponent>(graph), component_limit_(component_limit),
         is_le_(is_le), is_me_(is_me)
 {

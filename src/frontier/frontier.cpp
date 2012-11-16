@@ -20,6 +20,7 @@
 
 #include <cstdio>
 #include <ctime>
+#include <climits>
 #include <string>
 #include <fstream>
 #include <iomanip>
@@ -508,13 +509,14 @@ int main(int argc, char** argv)
         static_cast<StateRForest*>(state)->SetRootManager(&root_mgr);
         break;
     case COMP:
-        state = new StateComponent(graph, upper_bound, is_le, is_me);
+        state = new StateComponent(graph, (is_use_upper ? static_cast<short>(upper_bound) :
+            SHRT_MAX), is_le, is_me);
         break;
     case KCUT:
-        state = new StateKcut(graph, static_cast<int>(upper_bound));
+        state = new StateKcut(graph, upper_bound);
         break;
     case RCUT:
-        state = new StateRcut(graph, static_cast<int>(upper_bound));
+        state = new StateRcut(graph, upper_bound);
         static_cast<StateRcut*>(state)->SetRootManager(&root_mgr);
         break;
     case SETPT:
@@ -590,7 +592,7 @@ int main(int argc, char** argv)
         default:
             try {
                 PrintNumberOfSolutions<uintx>(zdd, is_compute_solution, true);
-            } catch (const std::overflow_error& err) {
+            } catch (const std::overflow_error&) {
                 PrintNumberOfSolutions<double>(zdd, is_compute_solution, false);
             }
             break;

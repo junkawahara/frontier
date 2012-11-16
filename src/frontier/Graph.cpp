@@ -94,9 +94,14 @@ void Graph::LoadEdgeList(istream& ist, bool is_simple, bool is_directed)
 
     while (std::getline(ist, s)) {
         istringstream iss(s);
-        int src, dest, weight;
-        iss >> src >> dest >> weight;
-        edge_array_.push_back(Edge(src, dest));
+        int src, dest;
+        iss >> src >> dest;
+
+        double weight;
+        if (!(iss >> weight)) {
+            weight = 1.0;
+        }
+        edge_array_.push_back(Edge(src, dest, weight));
     }
     number_of_edges_ = static_cast<int>(edge_array_.size());
 }

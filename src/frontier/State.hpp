@@ -155,32 +155,25 @@ public:
 template <typename T>
 class RBuffer {
 private:
-    std::vector<T*> buffer_array_;
-    int deleted_index_;
+    T* buffer_;
     intx head_;
     intx tail_;
 
-    static const int BLOCK_SIZE_ = (1 << 24);
-    static const T TAIL_MARK = (sizeof(T) <= 1 ? static_cast<T>(-128) :
-                                (sizeof(T) <= 2 ? static_cast<T>(-32768) :
-                                    static_cast<T>(-99999999)));
+    intx capacity_;
 
 public:
-    RBuffer() : deleted_index_(0), head_(0), tail_(0)
+    RBuffer() : head_(0), tail_(0), capacity_(1 << 24)
     {
-        buffer_array_.push_back(new T[BLOCK_SIZE_]);
+        buffer_ = static_cast<T*>(malloc(capacity_ * sizeof(T)));
+        if (buffer_ == NULL) {
+            std::cerr << "Error: malloc for buffer_ failed!" << std::endl;
+            exit(1);
+        }
     }
 
     ~RBuffer()
     {
-        for (uint i = deleted_index_; i < buffer_array_.size(); ++i) {
-            delete[] buffer_array_[i];
-            buffer_array_[i] = NULL;
-        }
-
-        for (uint i = 0; i < buffer_array_.size(); ++i) { // for debug
-            assert(buffer_array_[i] == NULL);
-        }
+        free(buffer_);
     }
 
     intx GetHeadIndex() const
@@ -195,60 +188,46 @@ public:
 
     T* GetPointer(intx index)
     {
-        return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
+        return &buffer_[index];
     }
 
     const T* GetPointer(intx index) const
     {
-        return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
+        return &buffer_[index];
     }
 
     T* GetReadPointer(uintx offset)
     {
-        return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
+        return &buffer_[(tail_ + offset)];
     }
 
     const T* GetReadPointer(uintx offset) const
     {
-        return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
+        return &buffer_[(tail_ + offset)];
     }
 
-    T* GetWritePointerAndSeekHead(intx seek_size)
+    T* GetWritePointerAndSeekHead(intx size)
     {
-        if (head_ % BLOCK_SIZE_ + seek_size + 1 >= BLOCK_SIZE_) {
-            buffer_array_[head_ / BLOCK_SIZE_][head_ % BLOCK_SIZE_] = TAIL_MARK;
-            head_ = ((head_ + seek_size + 1) / BLOCK_SIZE_) * BLOCK_SIZE_ + seek_size;
-            while (static_cast<int>(buffer_array_.size()) <= (head_ - seek_size) / BLOCK_SIZE_) {
-                buffer_array_.push_back(new T[BLOCK_SIZE_]);
+        head_ += size;
+        if (head_ >= capacity_) {
+            capacity_ *= 2;
+            buffer_ = static_cast<T*>(realloc(buffer_, capacity_ * sizeof(T)));
+            if (buffer_ == NULL) {
+                std::cerr << "Error: out of memory!" << std::endl;
+                exit(1);
             }
-            return &buffer_array_[(head_ - seek_size) / BLOCK_SIZE_][0];
-        } else {
-            head_ += seek_size;
-            return &buffer_array_[(head_ - seek_size) / BLOCK_SIZE_][(head_ - seek_size)
-                % BLOCK_SIZE_];
         }
+        return &buffer_[head_ - size];
     }
 
-    void BackHead(intx offset)
+    void BackHead(intx index)
     {
-        head_ -= offset;
+        head_ -= index;
     }
 
-    void SeekTail(intx offset)
+    void SeekTail(uintx offset)
     {
-        assert(offset >= 0);
-        assert(tail_ + offset <= head_);
-
-        if (buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_]
-            == TAIL_MARK) {
-            for (; deleted_index_ < (tail_ + offset) / BLOCK_SIZE_ + 1; ++deleted_index_) {
-                buffer_array_.push_back(buffer_array_[deleted_index_]);
-                buffer_array_[deleted_index_] = NULL;
-            }
-            tail_ = ((tail_ + offset) / BLOCK_SIZE_ + 1) * BLOCK_SIZE_;
-        } else {
-            tail_ += offset;
-        }
+        tail_ += static_cast<intx>(offset);
     }
 };
 
@@ -275,7 +254,7 @@ public:
 
     ~DBuffer()
     {
-        delete buffer_;
+        free(buffer_);
     }
 
     intx GetHeadIndex() const

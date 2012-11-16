@@ -351,7 +351,7 @@ void PseudoZDD::ReduceAsZDD()
     node_map.insert(make_pair(1, 1));
 
     for (uint i = 0; i < new_level_array.size() - 1; ++i) {
-        for (int j = new_level_array[i]; j < new_level_array[i + 1]; ++j) {
+        for (intx j = new_level_array[i]; j < new_level_array[i + 1]; ++j) {
             node_map.insert(make_pair(level_first_array_[i] + j - new_level_array[i], j));
             node_array_[j] = node_array_[level_first_array_[i] + j - new_level_array[i]];
         }
