@@ -1,4 +1,4 @@
 frontier
 ========
 
-frontier method
+See "doc/frontier.pdf".
