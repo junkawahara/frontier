@@ -49,7 +49,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = makegrid$(EXEEXT)
+bin_PROGRAMS = makegrid$(EXEEXT) distfilter$(EXEEXT)
 subdir = src/utility
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -61,6 +61,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_distfilter_OBJECTS = Graph.$(OBJEXT) distfilter.$(OBJEXT)
+distfilter_OBJECTS = $(am_distfilter_OBJECTS)
+distfilter_LDADD = $(LDADD)
 am_makegrid_OBJECTS = makegrid.$(OBJEXT)
 makegrid_OBJECTS = $(am_makegrid_OBJECTS)
 makegrid_LDADD = $(LDADD)
@@ -72,8 +75,13 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(makegrid_SOURCES)
-DIST_SOURCES = $(makegrid_SOURCES)
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
+SOURCES = $(distfilter_SOURCES) $(makegrid_SOURCES)
+DIST_SOURCES = $(distfilter_SOURCES) $(makegrid_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -173,11 +181,15 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+FRONTIER_DIR = ../frontier
 makegrid_SOURCES = makegrid.c
+distfilter_SOURCES = $(FRONTIER_DIR)/GraphInterface.hpp $(FRONTIER_DIR)/Graph.hpp \
+    $(FRONTIER_DIR)/Graph.cpp distfilter.cpp
+
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .o .obj
+.SUFFIXES: .c .cpp .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -248,6 +260,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+distfilter$(EXEEXT): $(distfilter_OBJECTS) $(distfilter_DEPENDENCIES) $(EXTRA_distfilter_DEPENDENCIES) 
+	@rm -f distfilter$(EXEEXT)
+	$(CXXLINK) $(distfilter_OBJECTS) $(distfilter_LDADD) $(LIBS)
 makegrid$(EXEEXT): $(makegrid_OBJECTS) $(makegrid_DEPENDENCIES) $(EXTRA_makegrid_DEPENDENCIES) 
 	@rm -f makegrid$(EXEEXT)
 	$(LINK) $(makegrid_OBJECTS) $(makegrid_LDADD) $(LIBS)
@@ -258,6 +273,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Graph.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distfilter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/makegrid.Po@am__quote@
 
 .c.o:
@@ -273,6 +290,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+Graph.o: $(FRONTIER_DIR)/Graph.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Graph.o -MD -MP -MF $(DEPDIR)/Graph.Tpo -c -o Graph.o `test -f '$(FRONTIER_DIR)/Graph.cpp' || echo '$(srcdir)/'`$(FRONTIER_DIR)/Graph.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/Graph.Tpo $(DEPDIR)/Graph.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(FRONTIER_DIR)/Graph.cpp' object='Graph.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Graph.o `test -f '$(FRONTIER_DIR)/Graph.cpp' || echo '$(srcdir)/'`$(FRONTIER_DIR)/Graph.cpp
+
+Graph.obj: $(FRONTIER_DIR)/Graph.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Graph.obj -MD -MP -MF $(DEPDIR)/Graph.Tpo -c -o Graph.obj `if test -f '$(FRONTIER_DIR)/Graph.cpp'; then $(CYGPATH_W) '$(FRONTIER_DIR)/Graph.cpp'; else $(CYGPATH_W) '$(srcdir)/$(FRONTIER_DIR)/Graph.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/Graph.Tpo $(DEPDIR)/Graph.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(FRONTIER_DIR)/Graph.cpp' object='Graph.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Graph.obj `if test -f '$(FRONTIER_DIR)/Graph.cpp'; then $(CYGPATH_W) '$(FRONTIER_DIR)/Graph.cpp'; else $(CYGPATH_W) '$(srcdir)/$(FRONTIER_DIR)/Graph.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
