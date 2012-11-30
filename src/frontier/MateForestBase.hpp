@@ -48,8 +48,8 @@ public:
 
     virtual ~StateForestBase()
     {
-        delete global_mate_;
-        delete calc_buff_;
+        delete[] global_mate_;
+        delete[] calc_buff_;
     }
 
     virtual void PackMate(ZDDNode* node, Mate* mate)

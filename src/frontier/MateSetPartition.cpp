@@ -38,8 +38,8 @@ StateSetPartition::StateSetPartition(HyperGraph* graph) : StateFrontierHyper(gra
 
 StateSetPartition::~StateSetPartition()
 {
-    delete leaving_frontier_bits_;
-    delete current_edge_bits_;
+    delete[] leaving_frontier_bits_;
+    delete[] current_edge_bits_;
     delete global_mate_;
 }
 
