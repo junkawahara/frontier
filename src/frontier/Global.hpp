@@ -23,14 +23,18 @@
 
 #include <climits>
 
-namespace frontier_dd {
-
 // for apfloat library
 #ifdef USE_APFLOAT
 #include <apfloat/ap.h>
 #include <apfloat/apint.h>
 #include <apfloat/apfloat.h>
 #endif
+
+#ifdef HAVE_LIBGMPXX
+#include <gmpxx.h>
+#endif
+
+namespace frontier_dd {
 
 typedef unsigned char byte;
 typedef unsigned short ushort;
@@ -74,6 +78,12 @@ typedef short mate_t;
 typedef apint ApInt;
 #else
 typedef intx ApInt;
+#endif
+
+#ifdef HAVE_LIBGMPXX
+typedef mpz_class MpInt;
+#else
+typedef intx MpInt;
 #endif
 
 } // the end of the namespace

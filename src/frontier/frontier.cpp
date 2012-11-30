@@ -28,6 +28,10 @@
 
 //#include <mcheck.h>
 
+#ifdef HAVE_LIBGMPXX
+#include <gmpxx.h>
+#endif
+
 #include "BigInteger.hpp"
 #include "MateSForest.hpp"
 #include "MateSTree.hpp"
@@ -147,7 +151,8 @@ int main(int argc, char** argv)
         INTX,
         DOUBLE,
         BIGINT,
-        APFLOAT
+        APFLOAT,
+        GMP
     };
 
     //mtrace(); // for debug
@@ -313,6 +318,13 @@ int main(int argc, char** argv)
             precision_kind = APFLOAT;
 #else
             cerr << "Please compile this program with defining USE_APFLOAT." << endl;
+            exit(1);
+#endif
+        } else if (arg == "--sm") {
+#ifdef HAVE_LIBGMPXX
+            precision_kind = GMP;
+#else
+            cerr << "Please run ./configure and make after installing gmp and gmpxx." << endl;
             exit(1);
 #endif
         } else if (arg == "--enum") {
@@ -589,12 +601,15 @@ int main(int argc, char** argv)
         case APFLOAT:
             PrintNumberOfSolutions<ApInt>(zdd, is_compute_solution, false);
             break;
+        case GMP:
+            PrintNumberOfSolutions<MpInt>(zdd, is_compute_solution, false);
+            break;
         default:
-            try {
-                PrintNumberOfSolutions<uintx>(zdd, is_compute_solution, true);
-            } catch (const std::overflow_error&) {
-                PrintNumberOfSolutions<double>(zdd, is_compute_solution, false);
-            }
+#ifdef HAVE_LIBGMPXX
+            PrintNumberOfSolutions<MpInt>(zdd, is_compute_solution, false);
+#else
+            PrintNumberOfSolutions<BigInteger>(zdd, is_compute_solution, false);
+#endif
             break;
         }
     }

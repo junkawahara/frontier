@@ -23,7 +23,7 @@
 
 namespace frontier_dd {
 
-#if USE_APFLOAT
+#ifdef USE_APFLOAT
 template <>
 double Divide<ApInt>(ApInt nume, ApInt deno)
 {
@@ -33,6 +33,20 @@ double Divide<ApInt>(ApInt nume, ApInt deno)
     den.prec(10);
     apfloat probap = num / den;
     return ap2double(probap.ap);
+}
+#endif
+
+#ifdef HAVE_LIBGMPXX
+template <>
+double Divide<MpInt>(MpInt nume, MpInt deno)
+{
+    mpf_class num = nume;
+    mpf_class den = deno;
+    num.set_prec(10);
+    den.set_prec(10);
+
+    mpf_class probap = num / den;
+    return probap.get_d();
 }
 #endif
 

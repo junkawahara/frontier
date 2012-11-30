@@ -37,6 +37,10 @@ double Divide(T nume, T deno)
 template <> double Divide<ApInt>(ApInt nume, ApInt deno);
 #endif
 
+#if HAVE_LIBGMPXX
+template <> double Divide<MpInt>(MpInt nume, MpInt deno);
+#endif
+
 //*************************************************************************************************
 // SolutionArray: 解の数を数えるためのインターフェースクラス。
 class SolutionArray {
