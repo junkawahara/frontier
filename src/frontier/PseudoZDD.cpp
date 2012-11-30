@@ -205,15 +205,15 @@ PseudoZDD::PseudoZDD() : solution_array_(NULL), node_array_pointer_(NULL)
 
     // create ZeroNode
     node_array_.push_back(ZDDNode());
-    //node_array_[0].p.id = 0;
-    //node_array_[0].p.pos = -1;
+    //node_array_[0].p.pos_fixed = 0;
+    //node_array_[0].p.pos_frontier = -1;
     node_array_[0].n.lo = -1;
     node_array_[0].n.hi = -1;
 
     // create OneNode
     node_array_.push_back(ZDDNode());
-    //node_array_[1].p.id = -1;
-    //node_array_[1].p.pos = -1;
+    //node_array_[1].p.pos_fixed = -1;
+    //node_array_[1].p.pos_frontier = -1;
     node_array_[1].n.lo = -1;
     node_array_[1].n.hi = -1;
 }
@@ -226,7 +226,6 @@ PseudoZDD::~PseudoZDD()
 ZDDNode* PseudoZDD::CreateNode()
 {
     node_array_.push_back(ZDDNode());
-    node_array_.back().p.id = GetId(&node_array_.back());
 
     assert(node_array_pointer_ == &node_array_[0]); // for debug
 
@@ -248,8 +247,8 @@ void PseudoZDD::CreateRootNode()
     assert(node_array_.size() == 3);
     assert(level_first_array_.size() == 0);
 
-    node_array_[2].p.id = 2;
-    node_array_[2].p.pos = 0;
+    node_array_[2].p.pos_fixed = 0;
+    node_array_[2].p.pos_frontier = 0;
     //node_array_[2].n.lo = -1;
     //node_array_[2].n.hi = -1;
 
@@ -582,15 +581,15 @@ void PseudoZDD::ImportZDD(istream& ist, bool is_hex)
 
     // create ZeroNode
     node_array_.push_back(ZDDNode());
-    //node_array_[0].p.id = 0;
-    //node_array_[0].p.pos = -1;
+    //node_array_[0].p.pos_fixed = 0;
+    //node_array_[0].p.pos_frontier = -1;
     node_array_[0].n.lo = -1;
     node_array_[0].n.hi = -1;
 
     // create OneNode
     node_array_.push_back(ZDDNode());
-    //node_array_[1].p.id = 1;
-    //node_array_[1].p.pos = -1;
+    //node_array_[1].p.pos_fixed = 1;
+    //node_array_[1].p.pos_frontier = -1;
     node_array_[1].n.lo = -1;
     node_array_[1].n.hi = -1;
 

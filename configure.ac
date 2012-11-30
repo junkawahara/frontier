@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([frontier], [0.9.0], [jkawahara@erato.ist.hokudai.ac.jp])
+AC_INIT([frontier], [0.9.1], [jkawahara@erato.ist.hokudai.ac.jp])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([src/frontier/frontier.cpp])

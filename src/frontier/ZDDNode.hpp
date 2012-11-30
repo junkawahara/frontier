@@ -34,8 +34,8 @@ public:
     struct {
         intx dummy1;
         intx dummy2;
-        intx id;
-        intx pos;
+        intx pos_fixed;
+        intx pos_frontier;
     } p;
     struct {
         intx lo;

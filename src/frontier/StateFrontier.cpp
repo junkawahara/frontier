@@ -28,8 +28,8 @@ using namespace std;
 bool StateFrontier::Equals(const ZDDNode& node1, const ZDDNode& node2) const
 {
     // フロンティアに含まれる各頂点についてmate値が同じかどうか判定
-    const mate_t* p1 = mate_buffer_.GetPointer(node1.p.pos);
-    const mate_t* p2 = mate_buffer_.GetPointer(node2.p.pos);
+    const mate_t* p1 = mate_buffer_.GetPointer(node1.p.pos_frontier);
+    const mate_t* p2 = mate_buffer_.GetPointer(node2.p.pos_frontier);
     for (int i = 0; i < GetNextFrontierSize(); ++i) {
         if (p1[i] != p2[i]) {
             return false;
@@ -43,7 +43,7 @@ intx StateFrontier::GetHashValue(const ZDDNode& node) const
     uintx hash_value = 0;
 
     // フロンティアに含まれる各頂点についてmate値が同じかどうか判定
-    const mate_t* p = mate_buffer_.GetPointer(node.p.pos);
+    const mate_t* p = mate_buffer_.GetPointer(node.p.pos_frontier);
     for (int i = 0; i < GetNextFrontierSize(); ++i) {
         hash_value = hash_value * 15284356289ll + p[i];
     }
@@ -57,7 +57,7 @@ void StateFrontier::Pack(ZDDNode* node, mate_t* mate)
     for (int i = 0; i < frontier_size; ++i) {
         p[i] = mate[GetNextFrontierValue(i)];
     }
-    node->p.pos = mate_buffer_.GetHeadIndex() - frontier_size;
+    node->p.pos_frontier = mate_buffer_.GetHeadIndex() - frontier_size;
 }
 
 void StateFrontier::UnpackAndSeek(ZDDNode* node, mate_t* mate)

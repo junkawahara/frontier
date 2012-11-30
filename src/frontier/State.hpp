@@ -155,25 +155,31 @@ public:
 template <typename T>
 class RBuffer {
 private:
-    T* buffer_;
+    std::vector<T*> buffer_array_;
+    std::vector<intx> tail_pos_array_;
+    int deleted_index_;
     intx head_;
     intx tail_;
 
-    intx capacity_;
+    static const intx BLOCK_SIZE_ = (1 << 24);
 
 public:
-    RBuffer() : head_(0), tail_(0), capacity_(1 << 24)
+    RBuffer() : deleted_index_(0), head_(0), tail_(0)
     {
-        buffer_ = static_cast<T*>(malloc(capacity_ * sizeof(T)));
-        if (buffer_ == NULL) {
-            std::cerr << "Error: malloc for buffer_ failed!" << std::endl;
-            exit(1);
-        }
+        buffer_array_.push_back(new T[BLOCK_SIZE_]);
+        tail_pos_array_.push_back(-1);
     }
 
     ~RBuffer()
     {
-        free(buffer_);
+        for (uint i = deleted_index_; i < buffer_array_.size(); ++i) {
+            delete[] buffer_array_[i];
+            buffer_array_[i] = NULL;
+        }
+
+        for (uint i = 0; i < buffer_array_.size(); ++i) { // for debug
+            assert(buffer_array_[i] == NULL);
+        }
     }
 
     intx GetHeadIndex() const
@@ -181,53 +187,70 @@ public:
         return head_;
     }
 
-    intx GetTailIndex() const // for debug
-    {
-        return tail_;
-    }
-
     T* GetPointer(intx index)
     {
-        return &buffer_[index];
+        return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
     }
 
     const T* GetPointer(intx index) const
     {
-        return &buffer_[index];
+        return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
     }
 
     T* GetReadPointer(uintx offset)
     {
-        return &buffer_[(tail_ + offset)];
+        return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
     }
 
     const T* GetReadPointer(uintx offset) const
     {
-        return &buffer_[(tail_ + offset)];
+        return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
     }
 
-    T* GetWritePointerAndSeekHead(intx size)
+    T* GetWritePointerAndSeekHead(intx seek_size)
     {
-        head_ += size;
-        if (head_ >= capacity_) {
-            capacity_ *= 2;
-            buffer_ = static_cast<T*>(realloc(buffer_, capacity_ * sizeof(T)));
-            if (buffer_ == NULL) {
-                std::cerr << "Error: out of memory!" << std::endl;
-                exit(1);
+        assert(seek_size < BLOCK_SIZE_);
+
+        if (head_ % BLOCK_SIZE_ + seek_size >= BLOCK_SIZE_) {
+            assert(head_ / BLOCK_SIZE_ < static_cast<intx>(tail_pos_array_.size()));
+            tail_pos_array_[head_ / BLOCK_SIZE_] = head_ % BLOCK_SIZE_;
+            tail_pos_array_.push_back(-1);
+
+            if (tail_ == head_) {
+                tail_ = (head_ / BLOCK_SIZE_ + 1) * BLOCK_SIZE_;
             }
+            head_ = (head_ / BLOCK_SIZE_ + 1) * BLOCK_SIZE_ + seek_size;
+            while (static_cast<int>(buffer_array_.size()) <= (head_ - seek_size) / BLOCK_SIZE_) {
+                buffer_array_.push_back(new T[BLOCK_SIZE_]);
+            }
+
+            return &buffer_array_[(head_ - seek_size) / BLOCK_SIZE_][0];
+        } else {
+            head_ += seek_size;
+            return &buffer_array_[(head_ - seek_size) / BLOCK_SIZE_][(head_ - seek_size)
+                % BLOCK_SIZE_];
         }
-        return &buffer_[head_ - size];
     }
 
-    void BackHead(intx index)
+    void BackHead(intx offset)
     {
-        head_ -= index;
+        head_ -= offset;
     }
 
-    void SeekTail(uintx offset)
+    void SeekTail(intx offset)
     {
-        tail_ += static_cast<intx>(offset);
+        assert(offset >= 0);
+        assert(tail_ + offset <= head_);
+
+        tail_ += offset;
+
+        if (tail_pos_array_[tail_ / BLOCK_SIZE_] == tail_ % BLOCK_SIZE_) {
+            for (; deleted_index_ < tail_ / BLOCK_SIZE_ + 1; ++deleted_index_) {
+                buffer_array_.push_back(buffer_array_[deleted_index_]);
+                buffer_array_[deleted_index_] = NULL;
+            }
+            tail_ = (tail_ / BLOCK_SIZE_ + 1) * BLOCK_SIZE_;
+        }
     }
 };
 
@@ -260,11 +283,6 @@ public:
     intx GetHeadIndex() const
     {
         return head_;
-    }
-
-    intx GetTailIndex() const // for debug
-    {
-        return tail_;
     }
 
     T* GetPointer(intx index)

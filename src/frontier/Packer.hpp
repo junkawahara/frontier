@@ -35,24 +35,14 @@ private:
 public:
     void Initialize(const T& initial_conf)
     {
-        // for 0/1-terminal and root node
-        fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
-        fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
         byte* p = fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
         memcpy(p, &initial_conf, sizeof(T)); // copy root node
-        fixed_buffer_.SeekTail(sizeof(T));
-        fixed_buffer_.SeekTail(sizeof(T));
-
-
-        //byte* p = fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T) * 3);
-        //memcpy(p + sizeof(T) * 2, &initial_conf, sizeof(T)); // copy root node
-        //fixed_buffer_.SeekTail(sizeof(T) * 2); // skip 0/1-terminal
     }
 
     bool Equals(const ZDDNode& node1, const ZDDNode& node2) const
     {
-        const byte* p1 = fixed_buffer_.GetPointer(node1.p.id * sizeof(T));
-        const byte* p2 = fixed_buffer_.GetPointer(node2.p.id * sizeof(T));
+        const byte* p1 = fixed_buffer_.GetPointer(node1.p.pos_fixed);
+        const byte* p2 = fixed_buffer_.GetPointer(node2.p.pos_fixed);
         for (uint i = 0; i < sizeof(T); ++i) {
             if (p1[i] != p2[i]) {
                 return false;
@@ -65,17 +55,18 @@ public:
     {
         uintx hash_value = 0;
 
-        const byte* p = fixed_buffer_.GetPointer(node.p.id * sizeof(T));
+        const byte* p = fixed_buffer_.GetPointer(node.p.pos_fixed);
         for (uint i = 0; i < sizeof(T); ++i) {
             hash_value = hash_value * 15284356289ll + p[i];
         }
         return hash_value;
     }
 
-    void Pack(ZDDNode* , T* mate_conf)
+    void Pack(ZDDNode* node, T* mate_conf)
     {
         byte* p = fixed_buffer_.GetWritePointerAndSeekHead(sizeof(T));
         memcpy(p, mate_conf, sizeof(T));
+        node->p.pos_fixed = fixed_buffer_.GetHeadIndex() - sizeof(T);
     }
 
     void Unpack(ZDDNode* , T* mate_conf)
