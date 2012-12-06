@@ -18,6 +18,10 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <cstdio>
 #include <ctime>
 #include <climits>
@@ -53,26 +57,43 @@
 using namespace std;
 using namespace frontier_dd;
 
+#ifdef HAVE_LIBGMPXX
+static double GetDouble(MpInt num)
+{
+    return num.get_d();
+}
+#endif
+
+static double GetDouble(uintx num)
+{
+    return static_cast<double>(num);
+}
+
+static double GetDouble(BigInteger num)
+{
+    return static_cast<double>(num);
+}
+
 template <typename T>
 static void PrintNumberOfSolutions(PseudoZDD* zdd, bool is_compute_solution, bool)
 {
     T num;
     num = zdd->ComputeNumberOfSolutions<T>();
     if (is_compute_solution) {
-        cerr << setprecision(15) << "# of solutions = " << num << endl;
+        cerr << "# of solutions = " << num;
+        double dnum = GetDouble(num);
+        if (dnum >= 1.0e+06) {
+            cerr << " (" << dnum << ")";
+        }
+        cerr << endl;
     }
 }
 
 template <>
-void PrintNumberOfSolutions<uintx>(PseudoZDD* zdd, bool is_compute_solution,
-    bool is_detect_overflow)
+void PrintNumberOfSolutions<double>(PseudoZDD* zdd, bool is_compute_solution, bool)
 {
-    uintx num;
-    if (is_detect_overflow) {
-        num = zdd->ComputeNumberOfSolutionsOF();
-    } else {
-        num = zdd->ComputeNumberOfSolutions<uintx>();
-    }
+    double num;
+    num = zdd->ComputeNumberOfSolutions<double>();
     if (is_compute_solution) {
         cerr << setprecision(15) << "# of solutions = " << num << endl;
     }
@@ -151,7 +172,6 @@ int main(int argc, char** argv)
         INTX,
         DOUBLE,
         BIGINT,
-        APFLOAT,
         GMP
     };
 
@@ -314,12 +334,8 @@ int main(int argc, char** argv)
         } else if (arg == "--sb") {
             precision_kind = BIGINT;
         } else if (arg == "--sa") {
-#ifdef USE_APFLOAT
-            precision_kind = APFLOAT;
-#else
-            cerr << "Please compile this program with defining USE_APFLOAT." << endl;
+            cerr << "The option of --sa (using apfloat) is obsolete." << endl;
             exit(1);
-#endif
         } else if (arg == "--sm") {
 #ifdef HAVE_LIBGMPXX
             precision_kind = GMP;
@@ -354,6 +370,18 @@ int main(int argc, char** argv)
         //    is_print_am = true;
         } else if (arg == "-v") {
             is_print_progress = true;
+        } else if (arg == "--version") {
+#ifdef HAVE_CONFIG_H
+            cout << PACKAGE_NAME << " version " << PACKAGE_VERSION;
+#else
+            cout << "frontier version unknown";
+#endif
+
+#ifdef HAVE_LIBGMPXX
+            cout << " with GNU MP library";
+#endif
+            cout << endl;
+            exit(0);
         } else if (arg == "--help") {
             cout << "Under construction..." << endl;
             return 0;
@@ -597,9 +625,6 @@ int main(int argc, char** argv)
             break;
         case BIGINT:
             PrintNumberOfSolutions<BigInteger>(zdd, is_compute_solution, false);
-            break;
-        case APFLOAT:
-            PrintNumberOfSolutions<ApInt>(zdd, is_compute_solution, false);
             break;
         case GMP:
             PrintNumberOfSolutions<MpInt>(zdd, is_compute_solution, false);

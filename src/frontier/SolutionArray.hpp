@@ -21,6 +21,10 @@
 #ifndef SOLUTIONARRAY_HPP
 #define SOLUTIONARRAY_HPP
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <iostream>
 #include <vector>
 #include <stdexcept>
@@ -32,10 +36,6 @@ double Divide(T nume, T deno)
 {
     return static_cast<double>(nume) / static_cast<double>(deno);
 }
-
-#if USE_APFLOAT
-template <> double Divide<ApInt>(ApInt nume, ApInt deno);
-#endif
 
 #if HAVE_LIBGMPXX
 template <> double Divide<MpInt>(MpInt nume, MpInt deno);

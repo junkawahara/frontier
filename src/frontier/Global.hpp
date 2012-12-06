@@ -21,14 +21,11 @@
 #ifndef GLOBAL_HPP
 #define GLOBAL_HPP
 
-#include <climits>
-
-// for apfloat library
-#ifdef USE_APFLOAT
-#include <apfloat/ap.h>
-#include <apfloat/apint.h>
-#include <apfloat/apfloat.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#include <climits>
 
 #ifdef HAVE_LIBGMPXX
 #include <gmpxx.h>
@@ -72,18 +69,12 @@ const int INTX_BITSIZE = sizeof(intx) * 8;
 typedef short mate_t;
 
 // type for big integers
-// If this program is built without apfloat library (i.e. USE_APFLOAT is not defined),
-// the type of "ApInt" is not used.
-#ifdef USE_APFLOAT
-typedef apint ApInt;
-#else
-typedef intx ApInt;
-#endif
-
+// If this program is built without GMP library (i.e. HAVE_LIBGMPXX isn't defined),
+// the type of "MpInt" is not used.
 #ifdef HAVE_LIBGMPXX
 typedef mpz_class MpInt;
 #else
-typedef intx MpInt;
+typedef uintx MpInt; // dummy typedef
 #endif
 
 } // the end of the namespace
