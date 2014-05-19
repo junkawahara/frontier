@@ -1,5 +1,5 @@
 \documentclass{jsarticle}
-\usepackage{graphicx}
+\usepackage[dvipdfmx]{graphicx}
 
 \title{フロンティア法プログラム}
 
@@ -11,7 +11,7 @@
 
 フロンティア法は、与えられたグラフ上において、指定された2点間のパスや全域木、
 連結成分などを表現するZDDを構築するアルゴリズムである。
-ZDDを構築することによって、全解の列挙や数え上げ、ランダムサンプリング等が可能になる。
+構築したZDDを基に、全解の列挙や数え上げ、ランダムサンプリングなどを行える。
 
 以下では、パスや全域木など、ZDDで表現したい部分グラフを構築対象と呼ぶ。
 
@@ -36,13 +36,13 @@ ZDDを構築することによって、全解の列挙や数え上げ、ラン�
 \item 集合被覆
 \item 集合パッキング
 \end{itemize}
-\item 構築したZDDの既約化（reduced and ordered ZDD）
+\item 構築したZDDの既約化（reduced and ordered ZDD を得る）
 \item 構築したZDDの解の個数のカウント
 \item 構築したZDDから全解を列挙
-\item 構築したZDDから一様ランダムサンプリング
+\item 構築したZDDから解の一様ランダムサンプリング
 %\item 構築したZDDのオートマトン化
 \item 入力グラフの頂点番号を幅優先順に付け替え
-\item 入力グラフ、出力ZDDのgraphviz形式による出力
+\item 入力グラフ、出力ZDDのgraphviz形式~\footnote{グラフ描画プログラム。http://graphviz.org/}による出力
 \end{itemize}
 
 \section{ビルドと実行}
@@ -63,7 +63,7 @@ make
 \end{verbatim}
 
 オプションを指定しない場合、64ビット版がビルドされる。
-32ビット版をビルドする場合は以下のようにオプションを与える。
+32ビット版をビルドする場合は以下で示すようにオプションを与える。
 
 \begin{verbatim}
 ./configure --enable-32bit
@@ -141,7 +141,7 @@ ZDDを既約化するには \texttt{-r} オプションを用いる。
 ./makegrid -d 3 3 | ./frontier -t sforest -r
 \end{verbatim}
 
-出力結果
+出力結果（ZDD本体は省略）
 
 \begin{verbatim}
 # of nodes of ZDD = 45
@@ -153,31 +153,41 @@ $s$-$t$パスZDDを構築するには \texttt{-t stpath} オプションを用�
 以下のコマンド例は、$3 \times 3$ グリッドの1つの角から対角の角までの
 全パスのZDDを構築する。始点を指定しない場合は頂点番号1、
 終点を指定しない場合は最も大きな頂点番号を指定したことになる。
-$3 \times 3$ グリッドの場合は始点は頂点1、終点は頂点9である。
+$3 \times 3$ グリッドの場合は始点は頂点1、終点は頂点9となる。
 %\texttt{makegrid} ユーティリティのドキュメントも参照のこと。
 
 \begin{verbatim}
 ./makegrid -d 3 3 | ./frontier -t stpath
 \end{verbatim}
 
+$s$-$t$パスの始点番号は \texttt{-s} オプションで、
+終点番号は \texttt{-e} オプションで指定する。
+
+\begin{verbatim}
+./makegrid -d 3 3 | ./frontier -t stpath -s 2 -e 8
+\end{verbatim}
+
+
 \section{入力書式}
 
-入力は、構築対象によって異なり、無向グラフ、有向グラフ、ハイパーグラフのいずれかである。
+\texttt{frontier} プログラムに与える入力は、無向グラフ、有向グラフ、ハイパーグラフのいずれかであり、
+\texttt{-t} オプションで指定した構築対象によって異なる。
 いずれの形式でも、頂点番号、辺の番号はともに1から始まる。
 
 \subsection{無向グラフの入力書式}
 
-入力が無向グラフの場合、隣接リスト形式または辺リスト形式を用いる。
-辺リスト形式を用いる場合は \texttt{-c} オプションを指定し、
-隣接リスト形式を指定する場合はオプションを指定しない。
+無向グラフを入力する場合、隣接リスト形式または辺リスト形式のテキストで表されたグラフを入力する。
+隣接リスト形式を指定する場合はオプション無しであり、
+辺リスト形式を用いる場合は \texttt{-c} オプションを指定する。
 
 隣接リスト形式では$i$行目に頂点$i$に隣接する頂点の番号を並べる。
 隣接リスト形式では、並列辺（parallel edge）は無視される。
-すなわち、頂点 $i$ から $j$ に張られた辺が複数存在する場合も、
-1本しか存在しないとみなされる。
-$i$ 行目に$j$が記述され、$j$行目に$i$が記述されているとき、
-$i$, $j$ 間には辺が1本存在する（$j$行目の$i$の記述は無視されると考える）。
-辺の番号は、上記で無視される辺を除いて、
+すなわち、頂点 $i$ から $j$ に張られた辺が複数存在する入力を与えた場合も、
+1本しか存在しないグラフに変換される。
+したがって、$i$ 行目に$j$が記述され、$j$行目に$i$が記述されているとき、
+入力を読み込んで作成されるグラフでは、
+$i$, $j$ 間には辺が1本だけ存在する（$j$行目の$i$の記述は無視されると考える）。
+辺の番号は、無視される辺を除いて、
 隣接リストでの番号の出現順に$1,2,3,\ldots$ と振られる
 （フロンティア法ではこの順で辺が処理される）。
 隣接リスト形式では、辺の番号（順番）を自由に指定することはできない。
@@ -206,7 +216,7 @@ $i$, $j$ 間には辺が1本存在する（$j$行目の$i$の記述は無視さ�
 
 \end{verbatim}
 
-このとき、$i$ 番の辺を$e_i$ とすると、$e_1 = \{1, 2\}$, $e_2 = \{1, 3\}$, $e_3 = \{1, 4\}$,
+このとき、$i$ 番の辺$e_i$ は、$e_1 = \{1, 2\}$, $e_2 = \{1, 3\}$, $e_3 = \{1, 4\}$,
 $e_4 = \{2, 4\}$, $e_5 = \{2, 5\}$, $e_6 = \{3, 4\}$, $e_7 = \{4, 5\}$ となる。
 
 図~\ref{fig:graph_example}のグラフを表現する辺リストは以下の通りである。
@@ -248,8 +258,8 @@ $e_4 = \{2, 4\}$, $e_5 = \{2, 5\}$, $e_6 = \{3, 4\}$, $e_7 = \{4, 5\}$ となる
 
 \subsection{入力グラフの確認}
 
-例えば、自分で用意した入力が、意図した通りのものであるかを
-確認するために、\texttt{--print-graph-al}, \texttt{--print-graph-el},
+用意した入力が意図した通りに \texttt{frontier} プログラムに読み込まれるかを確認するために、
+\texttt{--print-graph-al}, \texttt{--print-graph-el},
 \texttt{--print-graphviz} オプションが用意されている。\texttt{--print-graph-al} は
 入力グラフを隣接リスト形式で、\texttt{--print-graph-el} は入力グラフを
 辺リスト形式で出力する。このオプションを用いることで、
@@ -315,8 +325,8 @@ graphviz 形式で出力する。graphviz をインストールしていれば�
 
 \subsection{graphvizによるZDDの描画}
 
-graphviz がインストールされていると、ZDDを描画することができる。
-\texttt{--print-zdd-graphviz} でgraphviz形式のZDDを出力できる。
+graphviz プログラムを用いてZDDを描画することができる。
+\texttt{--print-zdd-graphviz} オプションでgraphviz形式のZDDを出力できる。
 
 例：$s$-$t$パスを表すZDDをgraphvizで描画（pngフォーマットで出力）
 
@@ -409,17 +419,17 @@ BigIntegerが使用される。
 \begin{tabular}[t]{|l|l|l|}
 \hline
 \textit{kind} & 入力 & 構築対象 \\ \hline \hline
-\texttt{sforest} & グラフ &全域森 (spanning forest) \\ \hline
-\texttt{stree} & グラフ & 全域木 (spanning tree) \\ \hline
-\texttt{stpath} & グラフ & 無向 $s$-$t$ パス ($s$-$t$ path) \\ \hline
-\texttt{pathmatching} & グラフ & 無向 $s$-$t$ パス ($s$-$t$ path) \\ \hline
-\texttt{mtpath} or \texttt{numberlink} & グラフ & 無向 $s$-$t$ パス ($s$-$t$ path) \\ \hline
-\texttt{dstpath} & グラフ & 有向 $s$-$t$ パス (directed $s$-$t$ path) 現バージョンでは未対応 \\ \hline
-\texttt{stedpath} & グラフ & （無向）辺素 $s$-$t$ パス (edge-disjoint $s$-$t$ path) 現バージョンでは未対応 \\ \hline
-\texttt{rforest} & グラフ & 根付き森 (rooted forest) \\ \hline
-\texttt{comp} & グラフ & 連結成分 (component) \\ \hline
-\texttt{kcut} & グラフ & $k$-カット ($k$-cut) \\ \hline
-\texttt{rcut} & グラフ & 源を指定した $k$-カット (terminal $k$-cut) \\ \hline
+\texttt{sforest} & 無向グラフ &全域森 (spanning forest) \\ \hline
+\texttt{stree} & 無向グラフ & 全域木 (spanning tree) \\ \hline
+\texttt{stpath} & 無向グラフ & 無向 $s$-$t$ パス ($s$-$t$ path) \\ \hline
+\texttt{pathmatching} or \texttt{pm} & 無向グラフ & パスマッチング（複数パス） \\ \hline
+\texttt{mtpath} or \texttt{numberlink} & 無向グラフ & 複数終端対パス (multi terminal paths) \\ \hline
+\texttt{dstpath} & 有向グラフ & 有向 $s$-$t$ パス (directed $s$-$t$ path) 現バージョンでは未対応 \\ \hline
+\texttt{stedpath} & 無向グラフ & （無向）辺素 $s$-$t$ パス (edge-disjoint $s$-$t$ path) 現バージョンでは未対応 \\ \hline
+\texttt{rforest} & 無向グラフ & 根付き森 (rooted forest) \\ \hline
+\texttt{comp} & 無向グラフ & 連結成分 (component) \\ \hline
+\texttt{kcut} & 無向グラフ & $k$-カット ($k$-cut) \\ \hline
+\texttt{rcut} & 無向グラフ & 源を指定した $k$-カット (terminal $k$-cut) \\ \hline
 \texttt{setpt} & ハイパーグラフ & 集合分割 (set partition) \\ \hline
 \texttt{setc} & ハイパーグラフ & 集合被覆 (set cover) \\ \hline
 \texttt{setpk} & ハイパーグラフ & 集合パッキング (set packing) \\
