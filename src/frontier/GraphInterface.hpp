@@ -34,6 +34,7 @@ protected:
 
 public:
     GraphInterface() : number_of_vertices_(0), number_of_edges_(0) { }
+    virtual ~GraphInterface() { }
 
     int GetNumberOfVertices() const
     {
