@@ -26,8 +26,10 @@ libfrontier_a_SOURCES = $(MYSOURCES) $(MYHEADERS)
 
 include_HEADERS = $(MYHEADERS)
 
-CXXFLAGS = -O3 -Wall -Wextra -Wformat=2
+AUTOMAKE_OPTIONS = subdir-objects
+
+AM_CXXFLAGS = -O3 -Wall -Wextra -Wformat=2
 
 if ENABLE_32BIT
-  CXXFLAGS += -DBIT32
+  AM_CXXFLAGS += -DBIT32
 endif
