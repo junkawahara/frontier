@@ -116,6 +116,8 @@ int main(int argc, char** argv)
                              // enumerate cycles
     bool is_any_path = false; // enumerate paths from start_vertex to any vertex
     string terminal_filename = "";
+    bool is_set_weight = false;
+    string weight_filename = "";
     bool is_use_upper = false;
     double upper_bound = 99999999.0;
     bool is_le = false; // for enumeration of components
@@ -262,6 +264,12 @@ int main(int argc, char** argv)
             loading_kind = INC_MATRIX;
         } else if (arg == "--input-el" || arg == "-c") {
             loading_kind = EDGE_LIST;
+        //} else if (arg == "-w" || arg == "--weight") {
+        //    is_set_weight = true;
+        //    if (i + 1 < argc) {
+        //        weight_filename = argv[i + 1];
+        //        ++i;
+        //    }
         } else if (arg == "-b") {
             is_breadth_first = true;
         } else if (arg == "-s") {
@@ -301,6 +309,15 @@ int main(int argc, char** argv)
             }
             if (root_mgr.GetSize() == 0) {
                 cerr << "Error: need integer(s) after -f." << endl;
+                exit(1);
+            }
+        } else if (arg == "--root") {
+            if (i + 1 < argc) {
+                root_mgr.Parse(string(argv[i + 1]));
+                ++i;
+            }
+            if (root_mgr.GetSize() == 0) {
+                cerr << "Error: cannot read roots from file." << endl;
                 exit(1);
             }
         } else if (arg == "-r") {
@@ -436,6 +453,11 @@ int main(int argc, char** argv)
 
     cerr << "# of vertices: " << igraph->GetNumberOfVertices()
         << ", # of edges: " << igraph->GetNumberOfEdges() << endl;
+
+    if (is_set_weight) {
+        ifstream ifs(weight_filename.c_str());
+        igraph->SetWeightToEach(ifs);
+    }
 
     if (is_breadth_first) {
         if (graph != NULL) {

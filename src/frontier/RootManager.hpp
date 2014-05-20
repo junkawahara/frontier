@@ -21,7 +21,9 @@
 #ifndef ROOTMANAGER_HPP
 #define ROOTMANAGER_HPP
 
+#include <iostream>
 #include <vector>
+#include <string>
 
 namespace frontier_dd {
 
@@ -50,6 +52,20 @@ public:
     bool Exists(int v) const
     {
         return std::find(source_array_.begin(), source_array_.end(), v) != source_array_.end();
+    }
+
+    void Parse(std::string filename)
+    {
+        std::ifstream ifs(filename.c_str());
+        Parse(ifs);
+    }
+
+    void Parse(std::istream& ifs)
+    {
+        int c;
+        while (ifs >> c) {
+            source_array_.push_back(c);
+        }
     }
 };
 

@@ -54,6 +54,8 @@ public:
     virtual void LoadEdgeList(std::istream& ist, bool is_simple = false,
         bool is_directed = false) = 0;
 
+    virtual void SetWeightToEach(std::istream& ist) = 0;
+
     virtual void PrintAdjacencyList(std::ostream& ost) const = 0;
     virtual void PrintAdjacencyMatrix(std::ostream& ost) const = 0;
     virtual void PrintIncidenceMatrix(std::ostream& ost) const = 0;

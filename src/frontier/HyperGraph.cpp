@@ -79,6 +79,26 @@ void HyperGraph::LoadEdgeList(std::istream& , bool , bool )
     exit(1);
 }
 
+void HyperGraph::SetWeightToEach(istream& ist)
+{
+    double c;
+    bool is_end = false;
+
+    for (int i = 0; i < number_of_vertices_; ++i)
+    {
+        if (is_end) {
+            edge_array_[i].weight = 1.0;
+        } else {
+            if (ist >> c) {
+                edge_array_[i].weight = c;
+            } else {
+                is_end = true;
+                edge_array_[i].weight = 1.0;
+            }
+        }
+    }
+}
+
 void HyperGraph::PrintAdjacencyList(ostream&) const
 {
     cerr << "HyperGraph::PrintAdjacencyList is not implemented." << endl;

@@ -134,6 +134,63 @@ public:
     }
 };
 
+class OptimalCalculator {
+public:
+    static int GetValiableNumber(int node_num,
+                                 const std::vector<intx>& level_first_array) {
+
+        for (uint i = 0; i < level_first_array.size(); ++i) {
+            if (level_first_array[i] <= node_num
+                && node_num < level_first_array[i + 1]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // This code has not been checked yet!!!
+    static double GetMaximum(const std::vector<ZDDNode>& node_array,
+                            const std::vector<intx>& level_first_array,
+                            const Graph& graph,
+                            std::vector<int>* result) {
+
+        std::vector<double> value_array;
+        std::vector<int> num_array;
+
+        value_array.resize(node_array.size());
+        num_array.resize(node_array.size());
+
+        value_array[0] = -99999999.9;
+        value_array[1] = 0;
+
+        for (intx i = static_cast<intx>(node_array.size()) - 1; i >= 2; --i) {
+            double val = value_array[node_array[i].n.hi] +
+                graph.GetEdgeArray()[GetValiableNumber(i, level_first_array)].weight;
+
+            if (value_array[node_array[i].n.lo] >= val) {
+                value_array[i] = value_array[node_array[i].n.lo];
+                num_array[i] = 0;
+            } else {
+                value_array[i] = val;
+                num_array[i] = 1;
+            }
+        }
+
+        intx node = 2;
+        double val2 = 0.0;
+        while (true) {
+            if (num_array[node] == 1) {
+                result->push_back(node);
+                val2 += graph.GetEdgeArray()[GetValiableNumber(node, level_first_array)].weight;
+                node = node_array[node].n.hi;
+            } else {
+                node = node_array[node].n.lo;
+            }
+        }
+        return val2;
+    }
+};
+
 } // the end of the namespace
 
 #endif // SOLUTIONARRAY_HPP

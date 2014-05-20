@@ -106,6 +106,26 @@ void Graph::LoadEdgeList(istream& ist, bool is_simple, bool is_directed)
     number_of_edges_ = static_cast<int>(edge_array_.size());
 }
 
+void Graph::SetWeightToEach(istream& ist)
+{
+    double c;
+    bool is_end = false;
+
+    for (int i = 0; i < number_of_vertices_; ++i)
+    {
+        if (is_end) {
+            edge_array_[i].weight = 1.0;
+        } else {
+            if (ist >> c) {
+                edge_array_[i].weight = c;
+            } else {
+                is_end = true;
+                edge_array_[i].weight = 1.0;
+            }
+        }
+    }
+}
+
 void Graph::PrintAdjacencyList(ostream& ost) const
 {
     for (int i = 1; i <= number_of_vertices_; ++i) {
