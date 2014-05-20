@@ -46,7 +46,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_distfilter_OBJECTS = $(FRONTIER_DIR)/Graph.$(OBJEXT) \
+am_distfilter_OBJECTS = ../frontier/Graph.$(OBJEXT) \
 	distfilter.$(OBJEXT)
 distfilter_OBJECTS = $(am_distfilter_OBJECTS)
 distfilter_LDADD = $(LDADD)
@@ -164,8 +164,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 FRONTIER_DIR = ../frontier
 makegrid_SOURCES = makegrid.c
-distfilter_SOURCES = $(FRONTIER_DIR)/GraphInterface.hpp $(FRONTIER_DIR)/Graph.hpp \
-    $(FRONTIER_DIR)/Graph.cpp distfilter.cpp
+distfilter_SOURCES = ../frontier/GraphInterface.hpp ../frontier/Graph.hpp \
+    ../frontier/Graph.cpp distfilter.cpp
 
 AUTOMAKE_OPTIONS = subdir-objects
 all: all-am
@@ -239,14 +239,14 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-$(FRONTIER_DIR)/$(am__dirstamp):
-	@$(MKDIR_P) $(FRONTIER_DIR)
-	@: > $(FRONTIER_DIR)/$(am__dirstamp)
-$(FRONTIER_DIR)/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) $(FRONTIER_DIR)/$(DEPDIR)
-	@: > $(FRONTIER_DIR)/$(DEPDIR)/$(am__dirstamp)
-$(FRONTIER_DIR)/Graph.$(OBJEXT): $(FRONTIER_DIR)/$(am__dirstamp) \
-	$(FRONTIER_DIR)/$(DEPDIR)/$(am__dirstamp)
+../frontier/$(am__dirstamp):
+	@$(MKDIR_P) ../frontier
+	@: > ../frontier/$(am__dirstamp)
+../frontier/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../frontier/$(DEPDIR)
+	@: > ../frontier/$(DEPDIR)/$(am__dirstamp)
+../frontier/Graph.$(OBJEXT): ../frontier/$(am__dirstamp) \
+	../frontier/$(DEPDIR)/$(am__dirstamp)
 distfilter$(EXEEXT): $(distfilter_OBJECTS) $(distfilter_DEPENDENCIES) 
 	@rm -f distfilter$(EXEEXT)
 	$(CXXLINK) $(distfilter_OBJECTS) $(distfilter_LDADD) $(LIBS)
@@ -256,12 +256,12 @@ makegrid$(EXEEXT): $(makegrid_OBJECTS) $(makegrid_DEPENDENCIES)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f $(FRONTIER_DIR)/Graph.$(OBJEXT)
+	-rm -f ../frontier/Graph.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@$(FRONTIER_DIR)/$(DEPDIR)/Graph.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../frontier/$(DEPDIR)/Graph.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distfilter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/makegrid.Po@am__quote@
 
@@ -407,8 +407,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-test -z "$(FRONTIER_DIR)/$(DEPDIR)/$(am__dirstamp)" || rm -f $(FRONTIER_DIR)/$(DEPDIR)/$(am__dirstamp)
-	-test -z "$(FRONTIER_DIR)/$(am__dirstamp)" || rm -f $(FRONTIER_DIR)/$(am__dirstamp)
+	-rm -f ../frontier/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../frontier/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -418,7 +418,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf $(FRONTIER_DIR)/$(DEPDIR) ./$(DEPDIR)
+	-rm -rf ../frontier/$(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -464,7 +464,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf $(FRONTIER_DIR)/$(DEPDIR) ./$(DEPDIR)
+	-rm -rf ../frontier/$(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
