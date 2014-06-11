@@ -466,7 +466,7 @@ BigIntegerが使用される。
 \texttt{-h} or \texttt{--hamilton}& off & \texttt{stpath}, \texttt{dstpath} & $s$-$t$ パス、サイクル列挙時にハミルトンパス、サイクルを列挙する。 \\ \hline
 \texttt{--cycle} & off & \texttt{stpath}, \texttt{dstpath} & サイクルを列挙する。 \\ \hline
 \texttt{--any} & off & \texttt{stpath}, \texttt{dstpath} & 始点から任意の頂点へのパスを列挙する。 \\ \hline
-\texttt{-k} or \texttt{--upper} $D$ & $\infty$ & \texttt{comp}, \texttt{kcut}, \texttt{rcut}, \texttt{stpath} & カット列挙において、カットの数を指定。また、パス列挙において、パスの長さの上限を指定。\texttt{--le} オプションを指定すると重さの総和が高々 $D$ の対象を列挙。\texttt{--me} オプションを指定すると重さの総和が少なくとも $D$ の対象を列挙。\texttt{--le}  \texttt{--me} のいずれも指定しない場合は重さの総和がちょうど $D$ の対象を列挙。 \\ \hline
+\texttt{-k} or \texttt{--upper} $D$ & $\infty$ & \texttt{comp}, \texttt{kcut}, \texttt{rcut}, \texttt{stpath} & カット列挙において、カットの数を指定。連結成分列挙において、連結成分の数を指定。また、パス列挙において、パスの長さの上限を指定。\texttt{--le} オプションを指定すると重さの総和が高々 $D$ の対象を列挙。\texttt{--me} オプションを指定すると重さの総和が少なくとも $D$ の対象を列挙。\texttt{--le}  \texttt{--me} のいずれも指定しない場合は重さの総和がちょうど $D$ の対象を列挙。 \\ \hline
 \texttt{--le} & off & \texttt{comp}, \texttt{kcut}, \texttt{rcut}, \texttt{stpath} & \texttt{-k} オプションと同時に指定することで、重さの総和が高々 $D$ の対象を列挙。 \\ \hline
 \texttt{--me} & off & \texttt{comp}, \texttt{kcut}, \texttt{rcut}, \texttt{stpath} & \texttt{-k} オプションと同時に指定することで、重さの総和が少なくとも $D$ の対象を列挙。 \\ \hline
 \end{tabular}
