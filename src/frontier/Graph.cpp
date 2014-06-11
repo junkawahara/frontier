@@ -353,6 +353,7 @@ void Graph::RemoveVertices(const vector<int>& remove_array, const vector<int>& n
 /* private */ void Graph::LoadAdjacencyListUndirected(istream& ist)
 {
     string s;
+    int max_vertex = 0;
     while (std::getline(ist, s)) {
         ++number_of_vertices_;
         istringstream iss(s);
@@ -361,6 +362,10 @@ void Graph::RemoveVertices(const vector<int>& remove_array, const vector<int>& n
             Edge edge(number_of_vertices_, x);
             if (number_of_vertices_ > x) {
                 std::swap(edge.src, edge.dest);
+            }
+
+            if (max_vertex < x) {
+                max_vertex = x;
             }
 
             uint e;
@@ -373,6 +378,10 @@ void Graph::RemoveVertices(const vector<int>& remove_array, const vector<int>& n
                 edge_array_.push_back(edge);
             }
         }
+    }
+    // The number of vertices is the largest index that appears in the list.
+    if (number_of_vertices_ < max_vertex) {
+        number_of_vertices_ = max_vertex;
     }
 }
 
