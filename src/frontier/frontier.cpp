@@ -104,6 +104,7 @@ int main(int argc, char** argv)
     int enum_kind = 0;
     int loading_kind = 0;
     int print_kind = 0;
+    string input_filename = "";
     bool is_print_graph = false; // print the input graph
     string print_graph_filename = "";
     bool is_print_graphviz = false; // print the input graph for graphviz
@@ -222,6 +223,14 @@ int main(int argc, char** argv)
                 }
             }
             ++i;
+        } else if (arg == "--input") {
+            if (i + 1 < argc) {
+                input_filename = argv[i + 1];
+                ++i;
+            } else {
+                cerr << "Error: need filename after --input." << endl;
+                exit(1);
+            }
         } else if (arg == "--print-graph" || arg == "--print-graph-al") {
             is_print_graph = true;
             print_kind = ADJ_LIST;
@@ -435,20 +444,38 @@ int main(int argc, char** argv)
         break;
     }
 
+
+    istream* input_is;
+    ifstream* input_ifs = NULL;
+
+    if (input_filename != "" && input_filename != "-") {
+        input_ifs = new ifstream;
+        input_is = input_ifs;
+        input_ifs->open(input_filename.c_str()); // FIX ME! need error check
+    } else {
+        input_is = &cin;
+    }
+
     bool is_directed = (enum_kind == DSTPATH);
     switch (loading_kind) {
     case ADJ_LIST:
-        igraph->LoadAdjacencyList(cin, is_directed);
+        igraph->LoadAdjacencyList(*input_is, is_directed);
         break;
     case ADJ_MATRIX:
-        igraph->LoadAdjacencyMatrix(cin, is_directed);
+        igraph->LoadAdjacencyMatrix(*input_is, is_directed);
         break;
     case INC_MATRIX:
-        igraph->LoadIncidenceMatrix(cin, is_directed);
+        igraph->LoadIncidenceMatrix(*input_is, is_directed);
         break;
     case EDGE_LIST:
-        igraph->LoadEdgeList(cin, is_directed);
+        igraph->LoadEdgeList(*input_is, is_directed);
         break;
+    }
+
+    if (input_ifs != NULL) {
+        input_ifs->close();
+        delete input_ifs;
+        input_is = input_ifs = NULL;
     }
 
     cerr << "# of vertices: " << igraph->GetNumberOfVertices()
