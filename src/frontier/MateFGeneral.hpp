@@ -39,6 +39,11 @@ struct FrontierVarFGeneral {
     mate_t comp;
 };
 
+static bool IsIn(int number, const std::vector<mate_t>& vec)
+{
+	return std::find(vec.begin(), vec.end(), number) != vec.end();
+}
+
 //*************************************************************************************************
 // StateFGeneral: 連結成分のための State
 class StateFGeneral : public StateFrontierAux<FrontierVarFGeneral> {
@@ -50,6 +55,10 @@ public: // fixme!!!
     std::vector<mate_t> Q_;
     std::vector<mate_t> T_;
 
+	bool is_using_cc_;
+	bool is_using_cycle_;
+	bool is_using_noe_;
+
 public:
     StateFGeneral(Graph* graph, const std::vector<std::vector<mate_t> >& D,
                   const std::vector<ShortPair>& P,
@@ -57,22 +66,64 @@ public:
                   const std::vector<mate_t>& C,
                   const std::vector<mate_t>& Q,
                   const std::vector<mate_t>& T)
-        : StateFrontierAux<FrontierVarFGeneral>(graph), D_(D), P_(P), S_(S), C_(C), Q_(Q), T_(T)
+        : StateFrontierAux<FrontierVarFGeneral>(graph), D_(D), P_(P), S_(S), C_(C), Q_(Q), T_(T),
+		is_using_cc_(false), is_using_cycle_(false), is_using_noe_(false)
     {
+		int n = graph->GetNumberOfVertices();
+		int m = graph->GetNumberOfEdges();
+
+		for (int i = 1; i <= n; ++i) {
+			if (!IsIn(i, C)) {
+				is_using_cc_ = true;
+				break;
+			}
+		}
+		for (int i = 1; i <= m; ++i) {
+			if (!IsIn(i, T)) {
+				is_using_noe_ = true;
+			}
+		}
+
+		if (!IsIn(1, Q)) {
+			is_using_cycle_ = true;
+		}
 
         byte initial_conf[sizeof(int) + 6];
-        *reinterpret_cast<int*>(initial_conf) = 6;
+        
         int pos = sizeof(int);
-        *reinterpret_cast<short*>(initial_conf + pos) = 0; // cc
-        pos += sizeof(short);
-        *reinterpret_cast<short*>(initial_conf + pos) = 0; // cycle
-        pos += sizeof(short);
-        *reinterpret_cast<short*>(initial_conf + pos) = 0; // noe
+		if (is_using_cc_) {
+			*reinterpret_cast<short*>(initial_conf + pos) = 0; // cc
+			pos += sizeof(short);
+		}
+		if (is_using_cycle_) {
+			*reinterpret_cast<short*>(initial_conf + pos) = 0; // cycle
+			pos += sizeof(short);
+		}
+		if (is_using_noe_) {
+			*reinterpret_cast<short*>(initial_conf + pos) = 0; // noe
+			pos += sizeof(short);
+		}
+		*reinterpret_cast<int*>(initial_conf) = pos - sizeof(int);
 
-        StateFrontierAux<FrontierVarFGeneral>::Initialize(initial_conf, 6);
+        StateFrontierAux<FrontierVarFGeneral>::Initialize(initial_conf, pos - sizeof(int));
     }
 
     virtual ~StateFGeneral() { }
+
+	bool IsUsingCC()
+	{
+		return is_using_cc_;
+	}
+
+	bool IsUsingCycle()
+	{
+		return is_using_cycle_;
+	}
+
+	bool IsUsingNoe()
+	{
+		return is_using_noe_;
+	}
 
     bool IsInPorS(int number)
     {
@@ -151,12 +202,6 @@ public:
         }
         return -1;
     }
-
-    static bool IsIn(int number, const std::vector<mate_t>& vec)
-    {
-        return std::find(vec.begin(), vec.end(), number) != vec.end();
-    }
-
 
     virtual void UpdateMate(State* state, int child_num);
     virtual int CheckTerminalPre(State* state, int child_num);

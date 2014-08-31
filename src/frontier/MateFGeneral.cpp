@@ -66,12 +66,18 @@ void StateFGeneral::Load(Mate* mate, byte* data)
     int n = *reinterpret_cast<int*>(data) + sizeof(int);
     int pos = sizeof(int);
 
-    m->cc = *reinterpret_cast<short*>(data + pos);
-    pos += sizeof(short);
-    m->cycle = (*reinterpret_cast<short*>(data + pos) == 1);
-    pos += sizeof(short);
-    m->noe = *reinterpret_cast<short*>(data + pos);
-    pos += sizeof(short);
+	if (is_using_cc_) {
+		m->cc = *reinterpret_cast<short*>(data + pos);
+		pos += sizeof(short);
+	}
+	if (is_using_cycle_) {
+		m->cycle = (*reinterpret_cast<short*>(data + pos) == 1);
+		pos += sizeof(short);
+	}
+	if (is_using_noe_) {
+		m->noe = *reinterpret_cast<short*>(data + pos);
+		pos += sizeof(short);
+	}
 
     //printf("Load: %p: %d %d %d: ", data, m->cc, m->cycle, m->noe);
 
@@ -102,12 +108,18 @@ void StateFGeneral::Store(Mate* mate, byte* data)
     MateFGeneral* m = static_cast<MateFGeneral*>(mate);
     int pos = sizeof(int);
 
-    *reinterpret_cast<short*>(data + pos) = m->cc;
-    pos += sizeof(short);
-    *reinterpret_cast<short*>(data + pos) = (m->cycle ? 1 : 0);
-    pos += sizeof(short);
-    *reinterpret_cast<short*>(data + pos) = m->noe;
-    pos += sizeof(short);
+	if (is_using_cc_) {
+		*reinterpret_cast<short*>(data + pos) = m->cc;
+		pos += sizeof(short);
+	}
+	if (is_using_cycle_) {
+		*reinterpret_cast<short*>(data + pos) = (m->cycle ? 1 : 0);
+		pos += sizeof(short);
+	}
+	if (is_using_noe_) {
+		*reinterpret_cast<short*>(data + pos) = m->noe;
+		pos += sizeof(short);
+	}
 
     for (unsigned int i = 1; i <= m->vset_count; ++i) {
         for (unsigned int j = 0; j < m->vset[i]->size(); ++j) {
@@ -129,10 +141,6 @@ void StateFGeneral::Store(Mate* mate, byte* data)
 
 //*************************************************************************************************
 // MateFGeneral
-
-//int cmp(const void* a, const void* b) {
-//    return *static_cast<short*>(a) - *static_cast<short*>(b);
-//}
 
 void MateFGeneral::UpdateMate(State* state, int child_num)
 {
@@ -314,7 +322,7 @@ int MateFGeneral::CheckTerminalPost(State* state)
             }
         }
 		if (!f) { // Line 18
-			if (cc > *max_element(st->C_.begin(), st->C_.end())) { // Line 19-20
+			if (st->IsUsingCC() && cc > *max_element(st->C_.begin(), st->C_.end())) { // Line 19-20
 				return 0;
 			}
 			// Line 21-22
@@ -333,11 +341,11 @@ int MateFGeneral::CheckTerminalPost(State* state)
 
     // Line 23-31
     if (state->IsLastEdge()) {
-        if (!IsIn(cc, st->C_)) { // Line 24-25
+        if (st->IsUsingCC() && !IsIn(cc, st->C_)) { // Line 24-25
             return 0;
-        } else if (!IsIn(noe, st->T_)) { // Line 26-27
+        } else if (st->IsUsingNoe() && !IsIn(noe, st->T_)) { // Line 26-27
             return 0;
-        } else if (!IsIn(0, st->Q_) && !cycle) {
+        } else if (st->IsUsingCycle() && !IsIn(0, st->Q_) && !cycle) {
             return 0;
         } else {
             return 1;
