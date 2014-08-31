@@ -1,0 +1,2 @@
+enumpath: enumpath.cpp MateSTPath.cpp MateFGeneral.cpp Graph.cpp PseudoZDD.cpp SolutionArray.cpp BigInteger.cpp
+	g++ enumpath.cpp MateSTPath.cpp MateFGeneral.cpp Graph.cpp PseudoZDD.cpp SolutionArray.cpp BigInteger.cpp -o enumpath -O3

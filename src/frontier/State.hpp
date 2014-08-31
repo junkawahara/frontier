@@ -93,7 +93,7 @@ public:
         return current_edge_ >= number_of_edges_ - 1;
     }
 
-    virtual void Update()
+    virtual void StartNextEdge()
     {
         ++current_edge_;
     }
@@ -132,11 +132,12 @@ public:
         return 2; // Each non-terminal node of BDD/ZDD has 2 children.
     }
 
+    virtual Mate* MakeEmptyMate() = 0;
     virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2) const = 0;
     virtual intx GetHashValue(const ZDDNode& node) const = 0;
     virtual void PackMate(ZDDNode* node, Mate* mate) = 0;
-    virtual Mate* UnpackMate(ZDDNode* node, int child_num) = 0;
-    virtual void Undo() = 0;
+    virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num) = 0;
+    virtual void Revert() = 0;
 };
 
 //*************************************************************************************************
@@ -145,7 +146,7 @@ class Mate {
 public:
     virtual ~Mate() { }
 
-    virtual void Update(State* state, int child_num) = 0;
+    virtual void UpdateMate(State* state, int child_num) = 0;
     virtual int CheckTerminalPre(State* state, int child_num) = 0;
     virtual int CheckTerminalPost(State* state) = 0;
 };

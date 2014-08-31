@@ -126,10 +126,12 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
     HashTable global_hash_table(INITIAL_HASH_SIZE_); // ノード検索用ハッシュ
     zdd->SetHashTable(&global_hash_table);
 
+    Mate* mate = state->MakeEmptyMate();
+
     // 各辺について、以下を実行する。
     for (int edge = 1; edge <= state->GetNumberOfEdges(); ++edge) {
-        // 「状態」を更新する
-        state->Update();
+        // 次の辺の処理を開始
+        state->StartNextEdge();
 
         // 次のレベルのノードがどこから始まるかを記録
         zdd->SetLevelStart();
@@ -142,7 +144,7 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
             //（child_num が 0 のとき Lo枝、child_num が 1 のとき Hi枝についての処理）
             for (int child_num = 0; child_num < state->GetNumberOfChildren(); ++child_num) {
                 // 子ノード
-                ZDDNode* child_node = MakeChildNode(node, state, child_num, zdd);
+                ZDDNode* child_node = MakeChildNode(node, mate, state, child_num, zdd);
 
                 // 終端でないかどうかチェック
                 if (child_node != zdd->GetZeroNode() && child_node != zdd->GetOneNode()) {
@@ -164,16 +166,18 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
         global_hash_table.Flush();
         state->PrintNodeNum(zdd->GetNumberOfNodes());
     }
+    delete mate;
     zdd->SetHashTable(NULL);
     return zdd;
 }
 
 // Lo枝またはHi枝の先の子ノードを計算
 // child_num が 0 なら Lo枝、1 なら Hi枝
-/*private*/ ZDDNode* FrontierAlgorithm::MakeChildNode(ZDDNode* node, State* state,
-                                                      int child_num, PseudoZDD* zdd)
+/*private*/ ZDDNode* FrontierAlgorithm::MakeChildNode(ZDDNode* node, Mate* mate,
+                                                      State* state, int child_num,
+                                                      PseudoZDD* zdd)
 {
-    Mate* mate = state->UnpackMate(node, child_num);
+    state->UnpackMate(node, mate, child_num);
 
     int c = mate->CheckTerminalPre(state, child_num); // 終端に遷移するか事前にチェック
     if (c == 0) { // 0終端に行くとき
@@ -182,7 +186,7 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
         return zdd->GetOneNode(); // 1終端を返す
     }
 
-    mate->Update(state, child_num); // mate を更新する
+    mate->UpdateMate(state, child_num); // mate を更新する
 
     c = mate->CheckTerminalPost(state); // 終端に遷移するか再度チェック
     if (c == 0) { // 0終端に行くとき
@@ -237,7 +241,7 @@ void PseudoZDD::DestructNode(ZDDNode* node, State* state)
     assert(&node_array_.back() == node);
 
     node_array_.pop_back(); // remove the tail element
-    state->Undo();
+    state->Revert();
 }
 
 void PseudoZDD::CreateRootNode()
@@ -293,8 +297,10 @@ void PseudoZDD::AddNodeToNextLevel(ZDDNode* node, State* state)
 void PseudoZDD::SetChildNode(ZDDNode* node, ZDDNode* child_node, int child_num)
 {
     if (child_num == 0) {
-        node->n.lo = GetId(child_node);
+        lo_node_id_ = GetId(child_node);
+        //node->n.lo = GetId(child_node);
     } else if (child_num == 1) {
+        node->n.lo = lo_node_id_;
         node->n.hi = GetId(child_node);
     } else {
         assert(false);

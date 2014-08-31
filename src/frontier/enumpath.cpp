@@ -20,13 +20,16 @@
 
 #include <iostream>
 #include <cstdio>
+#include <cmath>
 #include <sstream>
 
 #include "Graph.hpp"
 #include "StateFrontier.hpp"
 #include "MateSTPath.hpp"
 #include "PseudoZDD.hpp"
+#include "BigInteger.hpp"
 #include "SolutionArray.hpp"
+#include "MateFGeneral.hpp"
 
 //#include <mcheck.h>
 
@@ -41,6 +44,7 @@ int main(int argc, char** argv)
     bool is_enum = false;
     bool is_reduce_as_zdd = false;
     int start_vertex = 1, end_vertex = -1;
+    double max_distance = 9999999.0;
 
     for (int i = 1; i < argc; ++i) {
         string arg = argv[i];
@@ -70,6 +74,11 @@ int main(int argc, char** argv)
                 end_vertex = atoi(argv[i + 1]);
             }
             ++i;
+        } else if (arg == "-k") {
+            if (i + 1 < argc) {
+                max_distance = atoi(argv[i + 1]);
+            }
+            ++i;
         }
     }
 
@@ -82,10 +91,36 @@ int main(int argc, char** argv)
         end_vertex = graph->GetNumberOfVertices();
     }
 
-    StateSTPath* state = new StateSTPath(graph);
-    state->SetStartAndEndVertex(start_vertex, end_vertex);
-    state->SetHamilton(false);
-    state->SetCycle(false);
+    std::vector<std::vector<mate_t> > D;
+    std::vector<ShortPair> P;
+    std::vector<ShortPair> S;
+    std::vector<mate_t> C;
+    std::vector<mate_t> Q;
+    std::vector<mate_t> T;
+
+    D.push_back(std::vector<mate_t>());
+
+	for (int i = 1; i <= graph->GetNumberOfVertices(); ++i) {
+		D.push_back(std::vector<mate_t>());
+		for (int j = 0; j <= graph->GetNumberOfVertices(); ++j) {
+			D.back().push_back(j);
+		}
+	}
+
+	int n = graph->GetNumberOfVertices();
+	int nroot = sqrt(n);
+
+	S.push_back(ShortPair(1, 4));
+	S.push_back(ShortPair(1, 21));
+	S.push_back(ShortPair(4, 21));
+
+	C.push_back(3);
+	Q.push_back(0);
+	for (int i = 1; i <= graph->GetNumberOfEdges(); ++i) {
+		T.push_back(i);
+	}
+
+    StateFGeneral* state = new StateFGeneral(graph, D, P, S, C, Q, T);
 
     PseudoZDD* zdd = FrontierAlgorithm::Construct(state);
 
@@ -93,8 +128,9 @@ int main(int argc, char** argv)
         zdd->ReduceAsZDD();
     }
 
+    BigInteger bigint = zdd->ComputeNumberOfSolutions<BigInteger>();
     cerr << "# of ZDD nodes = " << zdd->GetNumberOfNodes() << ", # of solutions = "
-         << zdd->ComputeNumberOfSolutions<double>() << endl;
+         << bigint.GetString() << endl;
 
     if (is_print_zdd) {
         zdd->OutputZDD(stdout, false);
@@ -103,6 +139,11 @@ int main(int argc, char** argv)
     if (is_enum) {
         zdd->OutputAllSolutions(stdout);
     }
+
+    //srand(time(NULL));
+    //vector<int> ar;
+    //zdd->SampleUniformlyRandomly(&ar);
+    //graph->PrintForGraphviz(cout, ar);
 
     delete zdd;
     delete state;

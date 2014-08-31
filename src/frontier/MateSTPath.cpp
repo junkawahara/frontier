@@ -29,28 +29,17 @@ using namespace std;
 
 //*************************************************************************************************
 // StateSTPath
-StateSTPath::StateSTPath(Graph* graph) : StateFrontier(graph)
+
+Mate* StateSTPath::MakeEmptyMate()
 {
-    global_mate_ = new MateSTPath(this);
+   return new MateSTPath(this);
 }
 
-StateSTPath::~StateSTPath()
+void StateSTPath::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
 {
-    delete global_mate_;
-}
+    StateFrontier<mate_t>::UnpackMate(node, mate, child_num);
 
-void StateSTPath::PackMate(ZDDNode* node, Mate* mate)
-{
-    MateSTPath* mt = static_cast<MateSTPath*>(mate);
-
-    StateFrontier::Pack(node, mt->GetMateArray());
-}
-
-Mate* StateSTPath::UnpackMate(ZDDNode* node, int child_num)
-{
     if (child_num == 0) { // Hi枝の場合は既にunpackされているので、無視する
-        mate_t* mate = global_mate_->GetMateArray();
-        StateFrontier::UnpackAndSeek(node, mate);
 
         if (!IsCycle()) { // サイクルではない場合
             // 処理速度効率化のため、s と t はあらかじめつながれていると考え、
@@ -59,21 +48,24 @@ Mate* StateSTPath::UnpackMate(ZDDNode* node, int child_num)
             // その mate 値を t (or s) に設定する。
             // ただし、mate[x] = s (or t) となる x が既にフロンティア上に存在する場合は、
             // mate[s (or t)] = x に設定する
+            mate_t* mate_array = static_cast<MateSTPath*>(mate)->frontier_array;
+
             for (int i = 0; i < GetEnteringFrontierSize(); ++i) {
                 int v = GetEnteringFrontierValue(i);
+                mate_array[v] = v;
                 if (v == start_vertex_) {
-                    mate[v] = end_vertex_;
+                    mate_array[v] = end_vertex_;
                     for (int i = 0; i < GetPreviousFrontierSize(); ++i) {
-                        if (mate[GetPreviousFrontierValue(i)] == start_vertex_) {
-                            mate[v] = GetPreviousFrontierValue(i);
+                        if (mate_array[GetPreviousFrontierValue(i)] == start_vertex_) {
+                            mate_array[v] = GetPreviousFrontierValue(i);
                             break;
                         }
                     }
                 } else if (v == end_vertex_) {
-                    mate[v] = start_vertex_;
+                    mate_array[v] = start_vertex_;
                     for (int i = 0; i < GetPreviousFrontierSize(); ++i) {
-                        if (mate[GetPreviousFrontierValue(i)] == end_vertex_) {
-                            mate[v] = GetPreviousFrontierValue(i);
+                        if (mate_array[GetPreviousFrontierValue(i)] == end_vertex_) {
+                            mate_array[v] = GetPreviousFrontierValue(i);
                             break;
                         }
                     }
@@ -81,38 +73,25 @@ Mate* StateSTPath::UnpackMate(ZDDNode* node, int child_num)
             }
         }
     }
-
-    return global_mate_;
 }
 
 //*************************************************************************************************
 // MateSTPath
-MateSTPath::MateSTPath(State* state)
-{
-    mate_ = new mate_t[state->GetNumberOfVertices() + 1];
-}
 
-MateSTPath::~MateSTPath()
-{
-    if (mate_ != NULL) {
-        delete[] mate_;
-    }
-}
-
-void MateSTPath::Update(State* state, int child_num)
+void MateSTPath::UpdateMate(State* state, int child_num)
 {
     Edge edge = state->GetCurrentEdge();
 
     if (child_num == 1) { // Hi枝のとき
-        int sm = mate_[edge.src];
-        int dm = mate_[edge.dest];
+        int sm = frontier_array[edge.src];
+        int dm = frontier_array[edge.dest];
 
         // 辺をつないだときの mate の更新
         // （↓の計算順を変更すると正しく動作しないことに注意）
-        mate_[edge.src] = 0;
-        mate_[edge.dest] = 0;
-        mate_[sm] = dm;
-        mate_[dm] = sm;
+        frontier_array[edge.src] = 0;
+        frontier_array[edge.dest] = 0;
+        frontier_array[sm] = dm;
+        frontier_array[dm] = sm;
     }
 }
 
@@ -126,10 +105,10 @@ int MateSTPath::CheckTerminalPre(State* state, int child_num)
         StateSTPath* st = static_cast<StateSTPath*>(state);
         Edge edge = state->GetCurrentEdge();
 
-        if (mate_[edge.src] == 0 || mate_[edge.dest] == 0) {
+        if (frontier_array[edge.src] == 0 || frontier_array[edge.dest] == 0) {
             // 分岐が発生
             return 0;
-        } else if (mate_[edge.src] == edge.dest) {
+        } else if (frontier_array[edge.src] == edge.dest) {
             // サイクルが完成
 
             // フロンティアに属する残りの頂点についてチェック
@@ -138,13 +117,13 @@ int MateSTPath::CheckTerminalPre(State* state, int child_num)
                 // 張った辺の始点と終点、及びs,tはチェックから除外
                 if (v != edge.src && v != edge.dest) {
                     if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
-                        if (mate_[v] != 0) {
+                        if (frontier_array[v] != 0) {
                             return 0;
                         }
                     } else {
                         // パスの途中でなく、孤立した点でもない場合、
                         // 不完全なパスができることになるので、0を返す
-                        if (mate_[v] != 0 && mate_[v] != v) { // v の次数が 1
+                        if (frontier_array[v] != 0 && frontier_array[v] != v) { // v の次数が 1
                             return 0;
                         }
                     }
@@ -171,11 +150,11 @@ int MateSTPath::CheckTerminalPost(State* state)
     for (int i = 0; i < st->GetLeavingFrontierSize(); ++i) {
         mate_t v = st->GetLeavingFrontierValue(i); // フロンティアから抜ける頂点 v
         if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
-            if (mate_[v] != 0) { // v の次数が 0 or 1
+            if (frontier_array[v] != 0) { // v の次数が 0 or 1
                 return 0;
             }
         } else {
-            if (mate_[v] != 0 && mate_[v] != v) { // v の次数が 1
+            if (frontier_array[v] != 0 && frontier_array[v] != v) { // v の次数が 1
                 return 0;
             }
         }
@@ -202,20 +181,20 @@ int MateSTPath::CheckTerminalPreOld(State* state, int child_num)
         int sv = st->GetStartVertex();
         int ev = st->GetEndVertex();
 
-        if (mate_[edge.src] == 0 || mate_[edge.dest] == 0) {
+        if (frontier_array[edge.src] == 0 || frontier_array[edge.dest] == 0) {
             // 分岐が発生
             return 0;
-        } else if ((edge.src == sv || edge.dest == sv) && mate_[sv] != sv) {
+        } else if ((edge.src == sv || edge.dest == sv) && frontier_array[sv] != sv) {
             // s の次数が1
             return 0;
-        } else if ((edge.src == ev || edge.dest == ev) && mate_[ev] != ev) {
+        } else if ((edge.src == ev || edge.dest == ev) && frontier_array[ev] != ev) {
             // t の次数が1
             return 0;
-        } else if (mate_[edge.src] == edge.dest) {
+        } else if (frontier_array[edge.src] == edge.dest) {
             // サイクルが完成
             return 0;
-        } else if ((mate_[edge.src] == sv && mate_[edge.dest] == ev)
-                   || (mate_[edge.src] == ev && mate_[edge.dest] == sv)) {
+        } else if ((frontier_array[edge.src] == sv && frontier_array[edge.dest] == ev)
+                   || (frontier_array[edge.src] == ev && frontier_array[edge.dest] == sv)) {
             // s-t パスが完成
 
             // フロンティアに属する残りの頂点についてチェック
@@ -224,13 +203,13 @@ int MateSTPath::CheckTerminalPreOld(State* state, int child_num)
                 // 張った辺の始点と終点、及びs,tはチェックから除外
                 if (v != edge.src && v != edge.dest && v != sv && v != ev) {
                     if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
-                        if (mate_[v] != 0) {
+                        if (frontier_array[v] != 0) {
                             return 0;
                         }
                     } else {
                         // パスの途中でなく、孤立した点でもない場合、
                         // 不完全なパスができることになるので、0を返す
-                        if (mate_[v] != 0 && mate_[v] != v) {
+                        if (frontier_array[v] != 0 && frontier_array[v] != v) {
                             return 0;
                         }
                     }
@@ -255,18 +234,18 @@ int MateSTPath::CheckTerminalPostOld(State* state)
     for (int i = 0; i < state->GetLeavingFrontierSize(); ++i) {
         mate_t v = state->GetLeavingFrontierValue(i);
         if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
-            if (mate_[v] != 0) {
+            if (frontier_array[v] != 0) {
                 return 0;
             }
         } else {
             int sv = st->GetStartVertex();
             int ev = st->GetEndVertex();
             if (v == sv || v == ev) {
-                if (mate_[v] == v) { // v が始点または終点で v の次数が0
+                if (frontier_array[v] == v) { // v が始点または終点で v の次数が0
                     return 0;
                 }
             } else {
-                if (mate_[v] != 0 && mate_[v] != v) { // v の次数が1
+                if (frontier_array[v] != 0 && frontier_array[v] != v) { // v の次数が1
                     return 0;
                 }
             }

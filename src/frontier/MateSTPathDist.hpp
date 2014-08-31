@@ -21,35 +21,43 @@
 #ifndef MATESTPATHDIST_HPP
 #define MATESTPATHDIST_HPP
 
-#include "StateFrontierFixed.hpp"
-#include "MateSTPath.hpp"
+#include "StateFrontierAux.hpp"
+#include "PseudoZDD.hpp"
 
 namespace frontier_dd {
 
-//*************************************************************************************************
-// MateConfSTPathDist
-struct MateConfSTPathDist {
+class MateSTPathDist;
+
+struct VarTypeSTPathDist {
+    int size;
     double sum;
 };
 
-class MateSTPathDist;
-
 //*************************************************************************************************
-// StateSTPathDist: 距離制限付き s-t パスのための State
-class StateSTPathDist : public StateFrontierFixed<MateConfSTPathDist> {
+// StateSTPathDist: s-t パスのための State
+class StateSTPathDist : public StateFrontierAux<mate_t> {
 protected:
-    int start_vertex_;
-    int end_vertex_;
-    bool is_hamilton_;
-    bool is_cycle_;
-
+    int start_vertex_; // 始点 s
+    int end_vertex_; // 終点 t
+    bool is_hamilton_; // ハミルトンパスに限定するか（true の場合ハミルトンパス）
+    bool is_cycle_; // s-t パスではなくてサイクルにするか（true の場合サイクル）
+                    // true の場合、start_vertex_ と end_vertex_ は無視される
     double max_distance_;
 
-    MateSTPathDist* global_mate_;
+    //MateSTPathDist* global_mate_; // 処理速度効率化のため、MateSTPathDist オブジェクトを使いまわしする。
+                                // アルゴリズムを通して、MateSTPathDist オブジェクトは一度だけ
+                                // 作成される。そのオブジェクトを指すポインタ。
 
 public:
-    StateSTPathDist(Graph* graph);
-    virtual ~StateSTPathDist();
+    StateSTPathDist(Graph* graph) : StateFrontierAux<mate_t>(graph), max_distance_(99999999)
+    {
+        byte initial_conf[sizeof(int) + 8];
+        *reinterpret_cast<int*>(initial_conf) = 8;
+        *reinterpret_cast<double*>(initial_conf + sizeof(int)) = 0.0;
+        StateFrontierAux<mate_t>::Initialize(initial_conf, 8);
+    }
+
+    virtual ~StateSTPathDist() { }
 
     int GetStartVertex() const
     {
@@ -97,31 +105,25 @@ public:
         max_distance_ = max_distance;
     }
 
-    virtual void PackMate(ZDDNode* node, Mate* mate);
-    virtual Mate* UnpackMate(ZDDNode* node, int child_num);
+    virtual int GetNextAuxSize();
+    virtual void Load(Mate* mate, byte* data);
+    virtual void Store(Mate* mate, byte* data);
+
+    virtual Mate* MakeEmptyMate();
+    //virtual void PackMate(ZDDNode* node, Mate* mate);
+    virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num);
 };
 
 //*************************************************************************************************
 // MateSTPathDist
-class MateSTPathDist : public MateSTPath {
-protected:
-    MateConfSTPathDist conf_;
+class MateSTPathDist : public MateFrontier<mate_t> {
+public:
+    double sum_;
 
 public:
-    MateSTPathDist(State* state) : MateSTPath(state) { }
-    virtual ~MateSTPathDist() { }
+    MateSTPathDist(State* state) : MateFrontier<mate_t>(state), sum_(0.0) { }
 
-    mate_t* GetMateArray()
-    {
-        return mate_;
-    }
-
-    MateConfSTPathDist* GetConf()
-    {
-        return &conf_;
-    }
-
-    virtual void Update(State* state, int child_num);
+    virtual void UpdateMate(State* state, int child_num);
     virtual int CheckTerminalPre(State* state, int child_num);
     virtual int CheckTerminalPost(State* state);
 };

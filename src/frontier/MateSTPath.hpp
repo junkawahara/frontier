@@ -30,7 +30,7 @@ class MateSTPath;
 
 //*************************************************************************************************
 // StateSTPath: s-t パスのための State
-class StateSTPath : public StateFrontier {
+class StateSTPath : public StateFrontier<mate_t> {
 protected:
     int start_vertex_; // 始点 s
     int end_vertex_; // 終点 t
@@ -38,13 +38,13 @@ protected:
     bool is_cycle_; // s-t パスではなくてサイクルにするか（true の場合サイクル）
                     // true の場合、start_vertex_ と end_vertex_ は無視される
 
-    MateSTPath* global_mate_; // 処理速度効率化のため、MateSTPath オブジェクトを使いまわしする。
+    //MateSTPath* global_mate_; // 処理速度効率化のため、MateSTPath オブジェクトを使いまわしする。
                                 // アルゴリズムを通して、MateSTPath オブジェクトは一度だけ
                                 // 作成される。そのオブジェクトを指すポインタ。
 
 public:
-    StateSTPath(Graph* graph);
-    virtual ~StateSTPath();
+    StateSTPath(Graph* graph) : StateFrontier<mate_t>(graph) { }
+    virtual ~StateSTPath() { }
 
     int GetStartVertex() const
     {
@@ -82,25 +82,18 @@ public:
         is_cycle_ = is_cycle;
     }
 
-    virtual void PackMate(ZDDNode* node, Mate* mate);
-    virtual Mate* UnpackMate(ZDDNode* node, int child_num);
+    virtual Mate* MakeEmptyMate();
+    //virtual void PackMate(ZDDNode* node, Mate* mate);
+    virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num);
 };
 
 //*************************************************************************************************
 // MateSTPath
-class MateSTPath : public Mate {
-protected:
-    mate_t* mate_;
+class MateSTPath : public MateFrontier<mate_t> {
 public:
-    MateSTPath(State* state);
-    virtual ~MateSTPath();
+    MateSTPath(State* state) : MateFrontier<mate_t>(state) { }
 
-    mate_t* GetMateArray()
-    {
-        return mate_;
-    }
-
-    virtual void Update(State* state, int child_num);
+    virtual void UpdateMate(State* state, int child_num);
     virtual int CheckTerminalPre(State* state, int child_num);
     virtual int CheckTerminalPost(State* state);
 };

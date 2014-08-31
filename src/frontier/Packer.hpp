@@ -80,7 +80,7 @@ public:
         fixed_buffer_.SeekTail(sizeof(T));
     }
 
-    void Undo()
+    void Revert()
     {
         fixed_buffer_.BackHead(sizeof(T));
     }

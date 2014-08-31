@@ -29,77 +29,87 @@ using namespace std;
 
 //*************************************************************************************************
 // StateSTPathDist
-StateSTPathDist::StateSTPathDist(Graph* graph) : StateFrontierFixed<MateConfSTPathDist>(graph),
-    max_distance_(99999999)
+
+Mate* StateSTPathDist::MakeEmptyMate()
 {
-    global_mate_ = new MateSTPathDist(this);
-
-    MateConfSTPathDist initial_conf;
-    initial_conf.sum = 0;
-
-    StateFrontierFixed<MateConfSTPathDist>::Initialize(initial_conf);
+   return new MateSTPathDist(this);
 }
 
-StateSTPathDist::~StateSTPathDist()
+void StateSTPathDist::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
 {
-    delete global_mate_;
-}
-
-void StateSTPathDist::PackMate(ZDDNode* node, Mate* mate)
-{
-    MateSTPathDist* mt = static_cast<MateSTPathDist*>(mate);
-
-    StateFrontierFixed<MateConfSTPathDist>::PackAll(node, mt->GetMateArray(), mt->GetConf());
-}
-
-Mate* StateSTPathDist::UnpackMate(ZDDNode* node, int child_num)
-{
-    mate_t* mate = global_mate_->GetMateArray();
-    MateConfSTPathDist* conf = global_mate_->GetConf();
+    StateFrontierAux<mate_t>::UnpackMate(node, mate, child_num);
 
     if (child_num == 0) { // Hi枝の場合は既にunpackされているので、無視する
-        StateFrontierFixed<MateConfSTPathDist>::UnpackAll(node, mate, conf);
-        StateFrontierFixed<MateConfSTPathDist>::SeekTailFrontier();
 
-        if (!IsCycle()) {
+        if (!IsCycle()) { // サイクルではない場合
+            // 処理速度効率化のため、s と t はあらかじめつながれていると考え、
+            // s-t パスを作るのではなく、サイクルを作ると考える。
+            // したがって、初めて s (or t) がフロンティア上に出現したとき、
+            // その mate 値を t (or s) に設定する。
+            // ただし、mate[x] = s (or t) となる x が既にフロンティア上に存在する場合は、
+            // mate[s (or t)] = x に設定する
+            mate_t* mate_array = static_cast<MateSTPathDist*>(mate)->frontier_array;
+
             for (int i = 0; i < GetEnteringFrontierSize(); ++i) {
                 int v = GetEnteringFrontierValue(i);
+                mate_array[v] = v;
                 if (v == start_vertex_) {
-                    mate[v] = end_vertex_;
+                    mate_array[v] = end_vertex_;
                     for (int i = 0; i < GetPreviousFrontierSize(); ++i) {
-                        if (mate[GetPreviousFrontierValue(i)] == start_vertex_) {
-                            mate[v] = GetPreviousFrontierValue(i);
+                        if (mate_array[GetPreviousFrontierValue(i)] == start_vertex_) {
+                            mate_array[v] = GetPreviousFrontierValue(i);
                             break;
                         }
                     }
                 } else if (v == end_vertex_) {
-                    mate[v] = start_vertex_;
+                    mate_array[v] = start_vertex_;
                     for (int i = 0; i < GetPreviousFrontierSize(); ++i) {
-                        if (mate[GetPreviousFrontierValue(i)] == end_vertex_) {
-                            mate[v] = GetPreviousFrontierValue(i);
+                        if (mate_array[GetPreviousFrontierValue(i)] == end_vertex_) {
+                            mate_array[v] = GetPreviousFrontierValue(i);
                             break;
                         }
                     }
                 }
             }
         }
-    } else {
-        StateFrontierFixed<MateConfSTPathDist>::UnpackFixed(node, conf);
-        StateFrontierFixed<MateConfSTPathDist>::SeekTailFixed();
     }
+}
 
-    return global_mate_;
+int StateSTPathDist::GetNextAuxSize()
+{
+    return 8;
+}
+
+void StateSTPathDist::Load(Mate* mate, byte* data)
+{
+    static_cast<MateSTPathDist*>(mate)->sum_ = *reinterpret_cast<double*>(data + sizeof(int));
+}
+
+void StateSTPathDist::Store(Mate* mate, byte* data)
+{
+    *reinterpret_cast<int*>(data) = 8;
+    *reinterpret_cast<double*>(data + sizeof(int)) = static_cast<MateSTPathDist*>(mate)->sum_;
 }
 
 //*************************************************************************************************
 // MateSTPathDist
 
-void MateSTPathDist::Update(State* state, int child_num)
+void MateSTPathDist::UpdateMate(State* state, int child_num)
 {
-    MateSTPath::Update(state, child_num);
+    Edge edge = state->GetCurrentEdge();
 
-    if (child_num == 1) {
-        conf_.sum += state->GetCurrentEdge().weight;
+    if (child_num == 1) { // Hi枝のとき
+        int sm = frontier_array[edge.src];
+        int dm = frontier_array[edge.dest];
+
+        // 辺をつないだときの mate の更新
+        // （↓の計算順を変更すると正しく動作しないことに注意）
+        frontier_array[edge.src] = 0;
+        frontier_array[edge.dest] = 0;
+        frontier_array[sm] = dm;
+        frontier_array[dm] = sm;
+
+        sum_ += edge.weight;
     }
 }
 
@@ -108,23 +118,21 @@ void MateSTPathDist::Update(State* state, int child_num)
 int MateSTPathDist::CheckTerminalPre(State* state, int child_num)
 {
     StateSTPathDist* st = static_cast<StateSTPathDist*>(state);
+    Edge edge = state->GetCurrentEdge();
 
     if (child_num == 1) { // Hi枝のとき
-        if (conf_.sum + state->GetCurrentEdge().weight > st->GetMaxDistance()) {
+        if (sum_ + edge.weight > st->GetMaxDistance()) {
             return 0;
         }
     }
-
+    
     if (child_num == 0) { // Lo枝のとき
         return -1;
     } else { // Hi枝のとき
-        StateSTPathDist* st = static_cast<StateSTPathDist*>(state);
-        Edge edge = state->GetCurrentEdge();
-
-        if (mate_[edge.src] == 0 || mate_[edge.dest] == 0) {
+        if (frontier_array[edge.src] == 0 || frontier_array[edge.dest] == 0) {
             // 分岐が発生
             return 0;
-        } else if (mate_[edge.src] == edge.dest) {
+        } else if (frontier_array[edge.src] == edge.dest) {
             // サイクルが完成
 
             // フロンティアに属する残りの頂点についてチェック
@@ -133,13 +141,13 @@ int MateSTPathDist::CheckTerminalPre(State* state, int child_num)
                 // 張った辺の始点と終点、及びs,tはチェックから除外
                 if (v != edge.src && v != edge.dest) {
                     if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
-                        if (mate_[v] != 0) {
+                        if (frontier_array[v] != 0) {
                             return 0;
                         }
                     } else {
                         // パスの途中でなく、孤立した点でもない場合、
                         // 不完全なパスができることになるので、0を返す
-                        if (mate_[v] != 0 && mate_[v] != v) { // v の次数が 1
+                        if (frontier_array[v] != 0 && frontier_array[v] != v) { // v の次数が 1
                             return 0;
                         }
                     }
@@ -166,11 +174,11 @@ int MateSTPathDist::CheckTerminalPost(State* state)
     for (int i = 0; i < st->GetLeavingFrontierSize(); ++i) {
         mate_t v = st->GetLeavingFrontierValue(i); // フロンティアから抜ける頂点 v
         if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
-            if (mate_[v] != 0) { // v の次数が 0 or 1
+            if (frontier_array[v] != 0) { // v の次数が 0 or 1
                 return 0;
             }
         } else {
-            if (mate_[v] != 0 && mate_[v] != v) { // v の次数が1
+            if (frontier_array[v] != 0 && frontier_array[v] != v) { // v の次数が 1
                 return 0;
             }
         }
@@ -181,5 +189,99 @@ int MateSTPathDist::CheckTerminalPost(State* state)
         return -1;
     }
 }
+
+
+// old function
+
+#if 0
+
+int MateSTPathDist::CheckTerminalPreOld(State* state, int child_num)
+{
+    if (child_num == 0) { // Lo枝の処理のときはチェックの必要がない
+        return -1;
+    } else {
+        StateSTPathDist* st = static_cast<StateSTPathDist*>(state);
+        Edge edge = state->GetCurrentEdge();
+        int sv = st->GetStartVertex();
+        int ev = st->GetEndVertex();
+
+        if (frontier_array[edge.src] == 0 || frontier_array[edge.dest] == 0) {
+            // 分岐が発生
+            return 0;
+        } else if ((edge.src == sv || edge.dest == sv) && frontier_array[sv] != sv) {
+            // s の次数が1
+            return 0;
+        } else if ((edge.src == ev || edge.dest == ev) && frontier_array[ev] != ev) {
+            // t の次数が1
+            return 0;
+        } else if (frontier_array[edge.src] == edge.dest) {
+            // サイクルが完成
+            return 0;
+        } else if ((frontier_array[edge.src] == sv && frontier_array[edge.dest] == ev)
+                   || (frontier_array[edge.src] == ev && frontier_array[edge.dest] == sv)) {
+            // s-t パスが完成
+
+            // フロンティアに属する残りの頂点についてチェック
+            for (int i = 0; i < state->GetNextFrontierSize(); ++i) {
+                mate_t v = state->GetNextFrontierValue(i);
+                // 張った辺の始点と終点、及びs,tはチェックから除外
+                if (v != edge.src && v != edge.dest && v != sv && v != ev) {
+                    if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
+                        if (frontier_array[v] != 0) {
+                            return 0;
+                        }
+                    } else {
+                        // パスの途中でなく、孤立した点でもない場合、
+                        // 不完全なパスができることになるので、0を返す
+                        if (frontier_array[v] != 0 && frontier_array[v] != v) {
+                            return 0;
+                        }
+                    }
+                }
+            }
+            if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
+                if (st->IsExistUnprocessedVertex()) {
+                    return 0;
+                }
+            }
+            return 1;
+        } else {
+            return -1;
+        }
+    }
+}
+
+int MateSTPathDist::CheckTerminalPostOld(State* state)
+{
+    StateSTPathDist* st = static_cast<StateSTPathDist*>(state);
+
+    for (int i = 0; i < state->GetLeavingFrontierSize(); ++i) {
+        mate_t v = state->GetLeavingFrontierValue(i);
+        if (st->IsHamilton()) { // ハミルトンパス、サイクルの場合
+            if (frontier_array[v] != 0) {
+                return 0;
+            }
+        } else {
+            int sv = st->GetStartVertex();
+            int ev = st->GetEndVertex();
+            if (v == sv || v == ev) {
+                if (frontier_array[v] == v) { // v が始点または終点で v の次数が0
+                    return 0;
+                }
+            } else {
+                if (frontier_array[v] != 0 && frontier_array[v] != v) { // v の次数が1
+                    return 0;
+                }
+            }
+        }
+    }
+    if (state->IsLastEdge()) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+#endif
 
 } // the end of the namespace

@@ -82,7 +82,8 @@ public:
     static PseudoZDD* Construct(State* state);
 
 private:
-    static ZDDNode* MakeChildNode(ZDDNode* node, State* state, int child_num, PseudoZDD* zdd);
+    static ZDDNode* MakeChildNode(ZDDNode* node, Mate* mate, State* state,
+                                  int child_num, PseudoZDD* zdd);
 };
 
 //*************************************************************************************************
@@ -93,6 +94,7 @@ private:
     std::vector<intx> level_first_array_;
     SolutionArray* solution_array_;
     HashTable* global_hash_table_;
+    intx lo_node_id_;
 
     ZDDNode* node_array_pointer_; // for debug
 

@@ -27,13 +27,12 @@ namespace frontier_dd {
 
 //*************************************************************************************************
 // ZDDNode: ZDDのノードを表す共用体
-// 共用体にしている理由はメモリ使用量効率化のため（であるが、
-// この部分は未検討のため dummy1 と dummy2 を置いている。）
+// 共用体にしている理由はメモリ使用量効率化のため
 union ZDDNode {
 public:
     struct {
-        intx dummy1;
-        intx dummy2;
+        //intx dummy1;
+        //intx dummy2;
         intx pos_fixed;
         intx pos_frontier;
     } p;
