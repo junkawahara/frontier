@@ -43,7 +43,14 @@ protected:
                                 // 作成される。そのオブジェクトを指すポインタ。
 
 public:
-    StateSTPath(Graph* graph) : StateFrontier<mate_t>(graph) { }
+    StateSTPath(Graph* graph) : StateFrontier<mate_t>(graph)
+    {
+        start_vertex = 1;
+        end_vertex = graph->GetNumberOfVertices();
+        is_hamilton_ = false;
+        is_cycle_ = false;
+    }
+
     virtual ~StateSTPath() { }
 
     int GetStartVertex() const
