@@ -84,7 +84,7 @@ public:
 			}
 		}
 
-		if (!IsIn(1, Q)) {
+		if (!IsIn(0, Q)) {
 			is_using_cycle_ = true;
 		}
 
