@@ -45,8 +45,8 @@ protected:
 public:
     StateSTPath(Graph* graph) : StateFrontier<mate_t>(graph)
     {
-        start_vertex = 1;
-        end_vertex = graph->GetNumberOfVertices();
+        start_vertex_ = 1;
+        end_vertex_ = graph->GetNumberOfVertices();
         is_hamilton_ = false;
         is_cycle_ = false;
     }
