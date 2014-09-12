@@ -48,24 +48,24 @@ void StateSTPath::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
             // その mate 値を t (or s) に設定する。
             // ただし、mate[x] = s (or t) となる x が既にフロンティア上に存在する場合は、
             // mate[s (or t)] = x に設定する
-            mate_t* mate_array = static_cast<MateSTPath*>(mate)->frontier_array;
+            mate_t* frontier_array = static_cast<MateSTPath*>(mate)->frontier_array;
 
             for (int i = 0; i < GetEnteringFrontierSize(); ++i) {
                 int v = GetEnteringFrontierValue(i);
-                mate_array[v] = v;
+                frontier_array[v] = v;
                 if (v == start_vertex_) {
-                    mate_array[v] = end_vertex_;
+                    frontier_array[v] = end_vertex_;
                     for (int i = 0; i < GetPreviousFrontierSize(); ++i) {
-                        if (mate_array[GetPreviousFrontierValue(i)] == start_vertex_) {
-                            mate_array[v] = GetPreviousFrontierValue(i);
+                        if (frontier_array[GetPreviousFrontierValue(i)] == start_vertex_) {
+                            frontier_array[v] = GetPreviousFrontierValue(i);
                             break;
                         }
                     }
                 } else if (v == end_vertex_) {
-                    mate_array[v] = start_vertex_;
+                    frontier_array[v] = start_vertex_;
                     for (int i = 0; i < GetPreviousFrontierSize(); ++i) {
-                        if (mate_array[GetPreviousFrontierValue(i)] == end_vertex_) {
-                            mate_array[v] = GetPreviousFrontierValue(i);
+                        if (frontier_array[GetPreviousFrontierValue(i)] == end_vertex_) {
+                            frontier_array[v] = GetPreviousFrontierValue(i);
                             break;
                         }
                     }
@@ -110,6 +110,10 @@ int MateSTPath::CheckTerminalPre(State* state, int child_num)
             return 0;
         } else if (frontier_array[edge.src] == edge.dest) {
             // サイクルが完成
+
+            if (!st->STEnteringFrontier()) { // s or t がまだフロンティアに入っていない
+                return 0;
+            }
 
             // フロンティアに属する残りの頂点についてチェック
             for (int i = 0; i < st->GetNextFrontierSize(); ++i) {

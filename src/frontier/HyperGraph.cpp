@@ -51,12 +51,9 @@ void HyperGraph::LoadIncidenceMatrix(std::istream& ist, bool , bool )
         HyperEdge edge;
         istringstream iss(s);
         int x;
-        edge.var_array.push_back(false); // dummy vertex (index 0)
         while (iss >> x) {
-            if (x != 0) {
-                edge.var_array.push_back(true);
-            } else {
-                edge.var_array.push_back(false);
+            if (x > 0) {
+                edge.var_array.push_back(x);
             }
         }
         if (is_first) {
@@ -73,10 +70,29 @@ void HyperGraph::LoadIncidenceMatrix(std::istream& ist, bool , bool )
     number_of_edges_ = static_cast<int>(edge_array_.size());
 }
 
-void HyperGraph::LoadEdgeList(std::istream& , bool , bool )
+void HyperGraph::LoadEdgeList(std::istream& ist, bool , bool )
 {
-    cerr << "HyperGraph::LoadEdgeList is not implemented." << endl;
-    exit(1);
+    string s;
+
+    std::getline(ist, s);
+
+    istringstream iss0(s);
+
+    iss0 >> number_of_vertices_;
+
+    while (std::getline(ist, s)) {
+        if (s == "") {
+            continue;
+        }
+        HyperEdge edge;
+        istringstream iss(s);
+        int x;
+        while (iss >> x) {
+            edge.var_array.push_back(x);
+        }
+        edge_array_.push_back(edge);
+    }
+    number_of_edges_ = static_cast<int>(edge_array_.size());
 }
 
 void HyperGraph::SetWeightToEach(istream& ist)

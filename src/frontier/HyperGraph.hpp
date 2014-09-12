@@ -32,7 +32,7 @@ namespace frontier_dd {
 // HyperEdge: ハイパーグラフの辺を表すクラス
 struct HyperEdge {
 public:
-    std::vector<bool> var_array;
+    std::vector<int> var_array;
     double weight;
 };
 

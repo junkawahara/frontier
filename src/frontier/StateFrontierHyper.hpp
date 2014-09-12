@@ -21,99 +21,137 @@
 #ifndef STATEFRONTIERHYPER_HPP
 #define STATEFRONTIERHYPER_HPP
 
+#include <vector>
 #include <iostream>
+#include <cstring> // for memcmp
 
-#include "ZDDNode.hpp"
+#include "Global.hpp"
 #include "HyperGraph.hpp"
 #include "StateFrontier.hpp"
+#include "ZDDNode.hpp"
 
 namespace frontier_dd {
 
 //*************************************************************************************************
-// StateFrontier: StateFrontier のハイパーグラフ版
-class StateFrontierHyper : public StateFrontier {
+// StateFrontierHyper: xxxxxx
+template<typename T>
+class StateFrontierHyper : public StateFrontier<T> {
 protected:
-    HyperGraph* hgraph_;
-    RBuffer<uintx> mate_buffer_;
-
-    int previous_frontier_start_;
-    int previous_frontier_width_;
-    int current_frontier_start_;
-    int current_frontier_width_;
-    int next_frontier_start_;
-    int next_frontier_width_;
-
-    uintx* current_edge_bits_;
-    uintx* leaving_frontier_bits_;
+    HyperGraph* graph_;
 
 public:
-    StateFrontierHyper(HyperGraph* hgraph);
-
-    virtual int GetNumberOfVertices()
+    StateFrontierHyper(HyperGraph* hgraph) : StateFrontier<T>(NULL), graph_(hgraph)
     {
-        return hgraph_->GetNumberOfVertices();
+        if (hgraph != NULL) {
+            State::number_of_vertices_ = hgraph->GetNumberOfVertices();
+            State::number_of_edges_ = hgraph->GetNumberOfEdges();
+        } else {
+            State::number_of_vertices_ = 0;
+            State::number_of_edges_ = 0;
+        }
     }
 
-    virtual int GetNumberOfEdges()
+    virtual void StartNextEdge();
+
+    const HyperEdge& GetCurrentHyperEdge() const
     {
-        return static_cast<int>(hgraph_->GetNumberOfEdges());
+        return graph_->GetEdgeArray()[State::current_edge_];
     }
 
-    HyperEdge GetCurrentEdge()
-    {
-        return hgraph_->GetEdgeArray()[current_edge_];
-    }
-
-    const std::vector<HyperEdge>& GetEdgeArray() const
-    {
-        return hgraph_->GetEdgeArray();
-    }
-
-    uintx GetCurrentEdgeBits(int index)
-    {
-        return current_edge_bits_[index];
-    }
-
-    uintx GetLeavingFrontierBits(int index)
-    {
-        return leaving_frontier_bits_[index];
-    }
-
-    virtual void Update();
-
-    virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2) const;
-    virtual intx GetHashValue(const ZDDNode& node) const;
-
-    virtual void Undo()
-    {
-        mate_buffer_.BackHead(GetNextFrontierWidthWord());
-    }
-
-    void Pack(ZDDNode* node, uintx* mate);
-    void Unpack(ZDDNode* node, uintx* mate);
-    void PrintFrontier(std::ostream& ost) const;
-
-    int GetPreviousFrontierWidthWord() const
-    {
-        return (previous_frontier_width_ > 0) ?
-            (previous_frontier_width_ - 1) / INTX_BITSIZE + 1 : 0;
-    }
-
-    int GetCurrentFrontierWidthWord() const
-    {
-        return (current_frontier_width_ > 0) ?
-            (current_frontier_width_ - 1) / INTX_BITSIZE + 1 : 0;
-    }
-
-    int GetNextFrontierWidthWord() const
-    {
-        return (next_frontier_width_ > 0) ?
-            (next_frontier_width_ - 1) / INTX_BITSIZE + 1 : 0;
-    }
+    bool IsExistUnprocessedVertex() const;
 
 private:
     bool Find(int edge_number, int value) const;
 };
+
+template<typename T>
+class MateFrontierHyper : public MateFrontier<T> {
+public:
+    MateFrontierHyper(State* state) : MateFrontier<T>(state) { }
+
+    virtual std::string GetPreviousString(State* ) { return std::string(""); }
+    virtual std::string GetNextString(State* ) { return std::string(""); }
+};
+
+template<>
+std::string MateFrontierHyper<FrontierComp>::GetPreviousString(State* state);
+template<>
+std::string MateFrontierHyper<FrontierComp>::GetNextString(State* state);
+
+
+template<typename T>
+void StateFrontierHyper<T>::StartNextEdge()
+{
+    State::StartNextEdge();
+
+    const std::vector<HyperEdge>& edge_array = graph_->GetEdgeArray();
+
+    const HyperEdge& edge = edge_array[State::current_edge_];
+
+    StateFrontier<T>::previous_frontier_array_ = StateFrontier<T>::next_frontier_array_;
+    StateFrontier<T>::entering_frontier_array_.clear();
+
+    for (uint i = 0; i < edge.var_array.size(); ++i) {
+        int v = edge.var_array[i];
+        if (std::find(StateFrontier<T>::next_frontier_array_.begin(),
+                  StateFrontier<T>::next_frontier_array_.end(), v)
+                        == StateFrontier<T>::next_frontier_array_.end()) {
+            StateFrontier<T>::next_frontier_array_.push_back(v);
+            StateFrontier<T>::entering_frontier_array_.push_back(v);
+        }
+    }
+
+    StateFrontier<T>::leaving_frontier_array_.clear();
+
+    for (uint i = 0; i < edge.var_array.size(); ++i) {
+        int v = edge.var_array[i];
+
+        if (!Find(State::current_edge_, v)) {
+            StateFrontier<T>::leaving_frontier_array_.push_back(v);
+            StateFrontier<T>::next_frontier_array_.erase(
+                             std::remove(StateFrontier<T>::next_frontier_array_.begin(),
+                             StateFrontier<T>::next_frontier_array_.end(), v),
+                             StateFrontier<T>::next_frontier_array_.end());
+        }
+    }
+}
+
+template<typename T>
+bool StateFrontierHyper<T>::IsExistUnprocessedVertex() const
+{
+    const std::vector<HyperEdge>& edge_array = graph_->GetEdgeArray();
+    for (uint i = State::current_edge_ + 1; i < edge_array.size(); ++i) {
+
+        for (uint j = 0; j < edge_array[i].var_array.size(); ++j) {
+            int v = edge_array[i].var_array[j];
+            // not found
+            if (std::find(StateFrontier<T>::next_frontier_array_.begin(),
+                          StateFrontier<T>::next_frontier_array_.end(),
+                          v) == StateFrontier<T>::next_frontier_array_.end()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+template<typename T>
+bool StateFrontierHyper<T>::Find(int edge_number, int value) const
+{
+    const std::vector<HyperEdge>& edge_array = graph_->GetEdgeArray();
+    for (uint i = edge_number + 1; i < edge_array.size(); ++i) {
+
+        for (uint j = 0; j < edge_array[i].var_array.size(); ++j) {
+            int v = edge_array[i].var_array[j];
+            if (value == v) {
+                return true;
+            }
+        }
+
+    }
+    return false;
+}
+
 
 } // the end of the namespace
 

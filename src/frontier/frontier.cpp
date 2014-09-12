@@ -37,21 +37,25 @@
 #endif
 
 #include "BigInteger.hpp"
-#include "MateSForest.hpp"
-#include "MateSTree.hpp"
-#include "MateRForest.hpp"
+//#include "MateSForest.hpp"
+//#include "MateSTree.hpp"
+//#include "MateRForest.hpp"
 #include "MateSTPath.hpp"
 #include "MateSTPathDist.hpp"
-#include "MatePathMatching.hpp"
-#include "MateMTPath.hpp"
+#include "MatePartition.hpp"
+//#include "MatePathMatching.hpp"
+//#include "MateMTPath.hpp"
 //#include "MateDSTPath.hpp"
 //#include "MateSTEDPath.hpp"
-#include "MateComponent.hpp"
-#include "MateKcut.hpp"
-#include "MateRcut.hpp"
-#include "MateSetPartition.hpp"
-#include "MateSetCover.hpp"
-#include "MateSetPacking.hpp"
+//#include "MateComponent.hpp"
+//#include "MateKcut.hpp"
+//#include "MateRcut.hpp"
+//#include "MateSetPartition.hpp"
+//#include "MateSetCover.hpp"
+//#include "MateSetPacking.hpp"
+#include "MateHyperSForest.hpp"
+#include "MateHyperReli.hpp"
+#include "RootManager.hpp"
 //#include "Automaton.hpp"
 
 using namespace std;
@@ -155,12 +159,14 @@ int main(int argc, char** argv)
         DSTPATH, // directed s-t path or cycle
         STEDPATH, // s-t edge-disjoint path
         RFOREST, // rooted (spanning) forest
-        COMP,    // component
+        PARTITION,    // partition
         KCUT,    // k-cut
         RCUT,    // rooted k-cut
         SETPT,   // set partition on a hypergraph
         SETC,    // set cover
         SETPK,   // set packing
+        HFOREST, // hyper forest 
+        HRELI,   // hyper reli
     };
 
     enum { // loading_kind
@@ -205,8 +211,8 @@ int main(int argc, char** argv)
                     enum_kind = STEDPATH;
                 } else if (kind == "rforest") {
                     enum_kind = RFOREST;
-                } else if (kind == "comp") {
-                    enum_kind = COMP;
+                } else if (kind == "partition" || kind == "part") {
+                    enum_kind = PARTITION;
                 } else if (kind == "kcut") {
                     enum_kind = KCUT;
                 } else if (kind == "rcut") {
@@ -217,6 +223,10 @@ int main(int argc, char** argv)
                     enum_kind = SETC;
                 } else if (kind == "setpk") {
                     enum_kind = SETPK;
+                } else if (kind == "hforest") {
+                    enum_kind = HFOREST;
+                } else if (kind == "hreli") {
+                    enum_kind = HRELI;
                 } else {
                     cerr << "Error: unknown enum_type: " << kind << "." << endl;
                     exit(1);
@@ -430,7 +440,7 @@ int main(int argc, char** argv)
     case DSTPATH:
     case STEDPATH:
     case RFOREST:
-    case COMP:
+    case PARTITION:
     case KCUT:
     case RCUT:
         graph = new Graph();
@@ -439,11 +449,15 @@ int main(int argc, char** argv)
     case SETPT:
     case SETC:
     case SETPK:
+    case HFOREST:
+    case HRELI:
         hgraph = new HyperGraph();
         igraph = hgraph;
+        if (loading_kind == 0) {
+            loading_kind = EDGE_LIST;
+        }
         break;
     }
-
 
     istream* input_is;
     ifstream* input_ifs = NULL;
@@ -551,10 +565,14 @@ int main(int argc, char** argv)
 
     switch (enum_kind) {
     case SFOREST:
-        state = new StateSForest(graph);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+        //state = new StateSForest(graph);
         break;
     case STREE:
-        state = new StateSTree(graph);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+        //state = new StateSTree(graph);
         break;
     case STPATH:
     case DSTPATH:
@@ -565,6 +583,8 @@ int main(int argc, char** argv)
                 state = new StateSTPath(graph);
             }
         } else {
+            cerr << "not implemented yet." << endl;
+            exit(1);
             //state = new StateDSTPath(graph);
         }
         if (is_use_upper) {
@@ -579,43 +599,73 @@ int main(int argc, char** argv)
         }
         break;
     case PATHMATCHING:
-        state = new StatePathMatching(graph);
-        static_cast<StatePathMatching*>(state)->SetHamilton(is_hamilton);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+        //state = new StatePathMatching(graph);
+        //static_cast<StatePathMatching*>(state)->SetHamilton(is_hamilton);
         break;
     case MTPATH:
-        state = new StateMTPath(graph);
-        static_cast<StateMTPath*>(state)->SetHamilton(is_hamilton);
-        static_cast<StateMTPath*>(state)->ParseTerminal(terminal_filename);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+        //state = new StateMTPath(graph);
+        //static_cast<StateMTPath*>(state)->SetHamilton(is_hamilton);
+        //static_cast<StateMTPath*>(state)->ParseTerminal(terminal_filename);
         break;
-    /*case STEDPATH:
-        state = new StateSTEDPath(graph);
-        static_cast<StateSTEDPath*>(state)->SetStartAndEndVertex(start_vertex, end_vertex);
-        static_cast<StateSTEDPath*>(state)->SetHamilton(is_hamilton);
-        static_cast<StateSTEDPath*>(state)->SetCycle(is_cycle);
-        break;*/
+    case STEDPATH:
+        cerr << "not implemented yet." << endl;
+        exit(1);
+        //state = new StateSTEDPath(graph);
+        //static_cast<StateSTEDPath*>(state)->SetStartAndEndVertex(start_vertex, end_vertex);
+        //static_cast<StateSTEDPath*>(state)->SetHamilton(is_hamilton);
+        //static_cast<StateSTEDPath*>(state)->SetCycle(is_cycle);
+        break;
     case RFOREST:
-        state = new StateRForest(graph);
-        static_cast<StateRForest*>(state)->SetRootManager(&root_mgr);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+        //state = new StateRForest(graph);
+        //static_cast<StateRForest*>(state)->SetRootManager(&root_mgr);
         break;
-    case COMP:
-        state = new StateComponent(graph, (is_use_upper ? static_cast<short>(upper_bound) :
+    case PARTITION:
+        state = new StatePartition(graph, (is_use_upper ? static_cast<short>(upper_bound) :
             SHRT_MAX), is_le, is_me);
         break;
     case KCUT:
-        state = new StateKcut(graph, upper_bound);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+
+        //state = new StateKcut(graph, upper_bound);
         break;
     case RCUT:
-        state = new StateRcut(graph, upper_bound);
-        static_cast<StateRcut*>(state)->SetRootManager(&root_mgr);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+
+        //state = new StateRcut(graph, upper_bound);
+        //static_cast<StateRcut*>(state)->SetRootManager(&root_mgr);
         break;
     case SETPT:
-        state = new StateSetPartition(hgraph);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+
+        //state = new StateSetPartition(hgraph);
         break;
     case SETC:
-        state = new StateSetCover(hgraph);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+
+        //state = new StateSetCover(hgraph);
         break;
     case SETPK:
-        state = new StateSetPacking(hgraph);
+        cerr << "not implemented yet." << endl;
+        exit(1);
+
+        //state = new StateSetPacking(hgraph);
+        break;
+    case HFOREST:
+        state = new StateHyperSForest(hgraph);
+        break;
+    case HRELI:
+        state = new StateHyperReli(hgraph);
+        static_cast<StateHyperReli*>(state)->SetRootManager(&root_mgr);
         break;
     }
     state->SetPrintProgress(is_print_progress);

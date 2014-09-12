@@ -1,5 +1,5 @@
 //
-// MateCComponent.hpp
+// MatePartition.hpp
 //
 // Copyright (c) 2012 Jun Kawahara
 //
@@ -23,32 +23,20 @@
 
 #include "StateFrontierAux.hpp"
 #include "PseudoZDD.hpp"
+#include "CompManager.hpp"
 
 namespace frontier_dd {
 
-class MateCComponent;
+class MatePartition;
 
-struct VarTypeCComponent {
+struct VarTypePartition {
     int size;
     double sum;
 };
 
-struct ShortPair {
-    short first;
-    short second;
-
-	ShortPair() { }
-
-	ShortPair(short f, short s)
-	{
-		first = f;
-		second = s;
-	}
-};
-
 //*************************************************************************************************
-// StateCComponent: 連結成分のための State
-class StateCComponent : public StateFrontierAux<mate_t> {
+// StatePartition: 連結成分のための State
+class StatePartition : public StateFrontierAux<FrontierComp> {
 protected:
     short component_limit_;
     bool is_le_; // true なら component 数を component_limit_ 以下に制限
@@ -58,14 +46,14 @@ protected:
     ShortPair* num_to_pair_table_;
 
 public:
-    StateCComponent(Graph* graph, short component_limit, bool is_le, bool is_me)
-        : StateFrontierAux<mate_t>(graph), component_limit_(component_limit),
+    StatePartition(Graph* graph, short component_limit, bool is_le, bool is_me)
+        : StateFrontierAux<FrontierComp>(graph), component_limit_(component_limit),
           is_le_(is_le), is_me_(is_me)
     {
         byte initial_conf[sizeof(int) + 2];
         *reinterpret_cast<int*>(initial_conf) = 2;
         *reinterpret_cast<short*>(initial_conf + sizeof(int)) = 0;
-        StateFrontierAux<mate_t>::Initialize(initial_conf, 2);
+        StateFrontierAux<FrontierComp>::Initialize(initial_conf, 2);
 
         int n = graph->GetNumberOfVertices();
 
@@ -81,7 +69,7 @@ public:
         }
     }
 
-    virtual ~StateCComponent() { }
+    virtual ~StatePartition() { }
 
     static short PairToNum(const ShortPair& pair)
     {
@@ -141,8 +129,8 @@ public:
 };
 
 //*************************************************************************************************
-// MateCComponent
-class MateCComponent : public MateFrontier<mate_t> {
+// MatePartition
+class MatePartition : public MateFrontier<FrontierComp> {
 public:
     short number_of_components_;
     ShortPair* pair_array_;
@@ -153,21 +141,27 @@ public:
     mate_t* swap_frontier_array_;
     short* sort_buff_;
 
+    CompManager<FrontierComp> comp_manager_;
+
 public:
-    MateCComponent(State* state) : MateFrontier<mate_t>(state), number_of_components_(0), pair_count_(0)
+    MatePartition(State* state) : MateFrontier<FrontierComp>(state), number_of_components_(0), pair_count_(0),
+                                  comp_manager_(frontier_array, state->GetNumberOfVertices())
     {
         int n = state->GetNumberOfVertices();
         pair_array_ = new ShortPair[n * (n - 1) / 2];
 
         swap_pair_array_ = new ShortPair[n * (n - 1) / 2];
-        calc_buff_ = new mate_t[n + 1];
-        swap_frontier_array_ = new mate_t[n + 1];
         sort_buff_ = new short[n * (n - 1) / 2];
     }
 
     virtual void UpdateMate(State* state, int child_num);
     virtual int CheckTerminalPre(State* state, int child_num);
     virtual int CheckTerminalPost(State* state);
+    virtual void Rename(State* state);
+
+    virtual std::string GetPreviousString(State* state);
+    virtual std::string GetNextString(State* state);
+
 };
 
 } // the end of the namespace

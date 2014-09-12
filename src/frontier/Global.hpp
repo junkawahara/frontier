@@ -26,6 +26,7 @@
 #endif
 
 #include <climits>
+#include <iostream>
 
 #ifdef HAVE_LIBGMPXX
 #include <gmpxx.h>
@@ -75,6 +76,25 @@ typedef short mate_t;
 typedef mpz_class MpInt;
 #else
 typedef uintx MpInt; // dummy typedef
+#endif
+
+struct ShortPair {
+    short first;
+    short second;
+
+	ShortPair() { }
+
+	ShortPair(short f, short s)
+	{
+		first = f;
+		second = s;
+	}
+};
+
+#ifdef DEBUG
+#define DebugPrintf(format, ...)  fprintf(stderr, format, __VA_ARGS__)
+#else
+#define DebugPrintf(format, ...)
 #endif
 
 } // the end of the namespace

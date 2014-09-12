@@ -36,6 +36,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = frontier$(EXEEXT) enumpath$(EXEEXT)
 @ENABLE_32BIT_TRUE@am__append_1 = -DBIT32
+@ENABLE_DEBUG_TRUE@am__append_2 = -g -DDEBUG
+@ENABLE_DEBUG_FALSE@am__append_3 = -O3
 subdir = src/frontier
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -76,22 +78,19 @@ ARFLAGS = cru
 libfrontier_a_AR = $(AR) $(ARFLAGS)
 libfrontier_a_LIBADD =
 am__objects_1 = BigInteger.$(OBJEXT) Graph.$(OBJEXT) \
-	HyperGraph.$(OBJEXT) MateComponent.$(OBJEXT) \
-	MateKcut.$(OBJEXT) MateMTPath.$(OBJEXT) \
-	MatePathMatching.$(OBJEXT) MateRForest.$(OBJEXT) \
-	MateRcut.$(OBJEXT) MateSTPath.$(OBJEXT) \
-	MateSTPathDist.$(OBJEXT) MateSTree.$(OBJEXT) \
-	MateSetCover.$(OBJEXT) MateSetPacking.$(OBJEXT) \
-	MateSetPartition.$(OBJEXT) PseudoZDD.$(OBJEXT) \
-	SolutionArray.$(OBJEXT) StateFrontier.$(OBJEXT) \
-	StateFrontierHyper.$(OBJEXT)
+	HyperGraph.$(OBJEXT) MatePartition.$(OBJEXT) \
+	MateSTPath.$(OBJEXT) MateSTPathDist.$(OBJEXT) \
+	PseudoZDD.$(OBJEXT) MateFGeneral.$(OBJEXT) \
+	MateHyperSForest.$(OBJEXT) MateHyperReli.$(OBJEXT) \
+	SolutionArray.$(OBJEXT) StateFrontier.$(OBJEXT)
 am__objects_2 =
 am_libfrontier_a_OBJECTS = $(am__objects_1) $(am__objects_2)
 libfrontier_a_OBJECTS = $(am_libfrontier_a_OBJECTS)
 PROGRAMS = $(bin_PROGRAMS)
-am_enumpath_OBJECTS = Graph.$(OBJEXT) PseudoZDD.$(OBJEXT) \
-	SolutionArray.$(OBJEXT) StateFrontier.$(OBJEXT) \
-	MateSTPath.$(OBJEXT) enumpath.$(OBJEXT)
+am_enumpath_OBJECTS = Graph.$(OBJEXT) BigInteger.$(OBJEXT) \
+	PseudoZDD.$(OBJEXT) SolutionArray.$(OBJEXT) \
+	StateFrontier.$(OBJEXT) MateSTPath.$(OBJEXT) \
+	MateFGeneral.$(OBJEXT) enumpath.$(OBJEXT)
 enumpath_OBJECTS = $(am_enumpath_OBJECTS)
 enumpath_LDADD = $(LDADD)
 am_frontier_OBJECTS = $(am__objects_1) $(am__objects_2) \
@@ -159,7 +158,6 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
-PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
@@ -225,18 +223,34 @@ MYHEADERS = BigInteger.hpp Global.hpp Graph.hpp \
     State.hpp StateFrontier.hpp StateFrontierFixed.hpp StateFrontierHyper.hpp \
     ZDDNode.hpp
 
-frontier_SOURCES = $(MYSOURCES) $(MYHEADERS) frontier.cpp
-enumpath_SOURCES = Graph.cpp PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
+MYSOURCESNEW = BigInteger.cpp Graph.cpp HyperGraph.cpp MatePartition.cpp \
+    MateSTPath.cpp MateSTPathDist.cpp \
+    PseudoZDD.cpp MateFGeneral.cpp MateHyperSForest.cpp MateHyperReli.cpp \
+    SolutionArray.cpp StateFrontier.cpp
+
+MYHEADERSNEW = BigInteger.hpp Global.hpp Graph.hpp \
+    GraphInterface.hpp HyperGraph.hpp MatePartition.hpp \
+    MateSTPath.hpp \
+    MateSTPathDist.hpp MateFGeneral.hpp MateHyperSForest.hpp \
+    Packer.hpp PseudoZDD.hpp RootManager.hpp SolutionArray.hpp \
+    State.hpp StateFrontier.hpp StateFrontierAux.hpp StateFrontierHyper.hpp \
+	StateFrontierHyperAux.hpp \
+    ZDDNode.hpp CompManager.hpp MateHyperReli.hpp
+
+frontier_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW) frontier.cpp
+enumpath_SOURCES = Graph.cpp BigInteger.cpp PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
     MateSTPath.cpp \
     Global.hpp GraphInterface.hpp Graph.hpp State.hpp StateFrontier.hpp \
     MateSTPath.hpp ZDDNode.hpp PseudoZDD.hpp SolutionArray.hpp \
+	MateFGeneral.cpp \
     enumpath.cpp
 
 lib_LIBRARIES = libfrontier.a
-libfrontier_a_SOURCES = $(MYSOURCES) $(MYHEADERS)
-include_HEADERS = $(MYHEADERS)
+libfrontier_a_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW)
+include_HEADERS = $(MYHEADERSNEW)
 AUTOMAKE_OPTIONS = subdir-objects
-AM_CXXFLAGS = -O3 -Wall -Wextra -Wformat=2 $(am__append_1)
+AM_CXXFLAGS = -Wall -Wextra -Wformat=2 $(am__append_1) $(am__append_2) \
+	$(am__append_3)
 all: all-am
 
 .SUFFIXES:
@@ -360,22 +374,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BigInteger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Graph.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/HyperGraph.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateComponent.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateKcut.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateMTPath.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MatePathMatching.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateRForest.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateRcut.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateFGeneral.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateHyperReli.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateHyperSForest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MatePartition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateSTPath.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateSTPathDist.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateSTree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateSetCover.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateSetPacking.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MateSetPartition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PseudoZDD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SolutionArray.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateFrontier.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateFrontierHyper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enumpath.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/frontier.Po@am__quote@
 

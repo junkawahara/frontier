@@ -38,6 +38,8 @@ protected:
     bool is_cycle_; // s-t パスではなくてサイクルにするか（true の場合サイクル）
                     // true の場合、start_vertex_ と end_vertex_ は無視される
 
+    bool st_entering_frontier_; // s or t がフロンティアに入ったかどうかを表す
+
     //MateSTPath* global_mate_; // 処理速度効率化のため、MateSTPath オブジェクトを使いまわしする。
                                 // アルゴリズムを通して、MateSTPath オブジェクトは一度だけ
                                 // 作成される。そのオブジェクトを指すポインタ。
@@ -49,6 +51,7 @@ public:
         end_vertex_ = graph->GetNumberOfVertices();
         is_hamilton_ = false;
         is_cycle_ = false;
+        st_entering_frontier_ = false;
     }
 
     virtual ~StateSTPath() { }
@@ -87,6 +90,27 @@ public:
     void SetCycle(bool is_cycle)
     {
         is_cycle_ = is_cycle;
+    }
+
+    bool STEnteringFrontier()
+    {
+        return st_entering_frontier_;
+    }
+
+    virtual void StartNextEdge()
+    {
+        StateFrontier<mate_t>::StartNextEdge();
+
+        if (!st_entering_frontier_) {
+            if (std::find(entering_frontier_array_.begin(),
+                          entering_frontier_array_.end(), start_vertex_) != entering_frontier_array_.end()) {
+                st_entering_frontier_ = true;
+            }
+            if (std::find(entering_frontier_array_.begin(),
+                          entering_frontier_array_.end(), end_vertex_) != entering_frontier_array_.end()) {
+                st_entering_frontier_ = true;
+            }
+        }
     }
 
     virtual Mate* MakeEmptyMate();

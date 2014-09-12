@@ -23,13 +23,31 @@
 
 #include <vector>
 #include <iostream>
-#include <string.h> // for memcmp
+#include <cstring> // for memcmp
+#include <string>
+#include <sstream>
 
 #include "Global.hpp"
 #include "State.hpp"
 #include "ZDDNode.hpp"
 
 namespace frontier_dd {
+
+//*************************************************************************************************
+// FrontierXXX
+
+struct FrontierDeg {
+    mate_t deg;
+};
+
+struct FrontierComp {
+    mate_t comp;
+};
+
+struct FrontierDegComp {
+    mate_t deg;
+    mate_t comp;
+};
 
 //*************************************************************************************************
 // StateFrontier: State にフロンティア関連の機能を付加したクラス
@@ -127,8 +145,15 @@ public:
             delete[] frontier_array;
         }
     }
+
+    virtual std::string GetPreviousString(State* ) { return std::string(""); }
+    virtual std::string GetNextString(State* ) { return std::string(""); }
 };
 
+template<> std::string MateFrontier<mate_t>::GetPreviousString(State* state);
+template<> std::string MateFrontier<mate_t>::GetNextString(State* state);
+template<> std::string MateFrontier<FrontierComp>::GetPreviousString(State* state);
+template<> std::string MateFrontier<FrontierComp>::GetNextString(State* state);
 
 
 template<typename T>
@@ -148,7 +173,7 @@ intx StateFrontier<T>::GetHashValue(const ZDDNode& node) const
 
     // フロンティアに含まれる各頂点についてmate値が同じかどうか判定
     const byte* p = reinterpret_cast<const byte*>(mate_buffer_.GetPointer(node.p.pos_frontier));
-    for (int i = 0; i < GetNextFrontierSize() * sizeof(T); ++i) {
+    for (uint i = 0; i < GetNextFrontierSize() * sizeof(T); ++i) {
         hash_value = hash_value * 15284356289ll + p[i];
     }
     return hash_value;
@@ -165,11 +190,10 @@ void StateFrontier<T>::PackMate(ZDDNode* node, Mate* mate)
         p[i] = frontier_array[GetNextFrontierValue(i)];
     }
     node->p.pos_frontier = mate_buffer_.GetHeadIndex() - frontier_size;
-
 }
 
 template<typename T>
-void StateFrontier<T>::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
+void StateFrontier<T>::UnpackMate(ZDDNode* , Mate* mate, int child_num)
 {
     T* frontier_array = static_cast<MateFrontier<T>*>(mate)->frontier_array;
 
@@ -288,7 +312,6 @@ bool StateFrontier<T>::Find(int edge_number, int value) const
     }
     return false;
 }
-
 
 } // the end of the namespace
 

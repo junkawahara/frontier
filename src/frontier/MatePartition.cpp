@@ -1,5 +1,5 @@
 //
-// MateCComponent.cpp
+// MatePartition.cpp
 //
 // Copyright (c) 2012 Jun Kawahara
 //
@@ -21,42 +21,43 @@
 #include <cstring>
 #include <cassert>
 #include <algorithm>
+#include <sstream>
 
-#include "MateCComponent.hpp"
+#include "MatePartition.hpp"
 
 namespace frontier_dd {
 
 using namespace std;
 
 //*************************************************************************************************
-// StateCComponent
+// StatePartition
 
-Mate* StateCComponent::MakeEmptyMate()
+Mate* StatePartition::MakeEmptyMate()
 {
-   return new MateCComponent(this);
+   return new MatePartition(this);
 }
 
-void StateCComponent::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
+void StatePartition::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
 {
-    StateFrontierAux<mate_t>::UnpackMate(node, mate, child_num);
+    StateFrontierAux<FrontierComp>::UnpackMate(node, mate, child_num);
 
-    mate_t* mate_array = static_cast<MateCComponent*>(mate)->frontier_array;
+    FrontierComp* frontier_array = static_cast<MatePartition*>(mate)->frontier_array;
 
     for (int i = 0; i < GetEnteringFrontierSize(); ++i) {
         int v = GetEnteringFrontierValue(i);
-        mate_array[v] = v;
+        frontier_array[v].comp = v + GetNumberOfVertices();
     }
 }
 
-int StateCComponent::GetNextAuxSize()
+int StatePartition::GetNextAuxSize()
 {
     int n = GetNextFrontierSize();
     return n * n - n + 2;
 }
 
-void StateCComponent::Load(Mate* mate, byte* data)
+void StatePartition::Load(Mate* mate, byte* data)
 {
-    MateCComponent* m = static_cast<MateCComponent*>(mate);
+    MatePartition* m = static_cast<MatePartition*>(mate);
 
     int n = *reinterpret_cast<int*>(data) / 2 - 1;
     m->number_of_components_ = *reinterpret_cast<short*>(data + sizeof(int));
@@ -74,9 +75,9 @@ void StateCComponent::Load(Mate* mate, byte* data)
     //printf("\n");
 }
 
-void StateCComponent::Store(Mate* mate, byte* data)
+void StatePartition::Store(Mate* mate, byte* data)
 {
-    MateCComponent* m = static_cast<MateCComponent*>(mate);
+    MatePartition* m = static_cast<MatePartition*>(mate);
 
     *reinterpret_cast<short*>(data + sizeof(int)) = m->number_of_components_;
     //printf("store pointer = %p, # of comp = %d", data, m->number_of_components_);
@@ -99,46 +100,23 @@ void StateCComponent::Store(Mate* mate, byte* data)
 }
 
 //*************************************************************************************************
-// MateCComponent
+// MatePartition
 
-//int cmp(const void* a, const void* b) {
-//    return *static_cast<short*>(a) - *static_cast<short*>(b);
-//}
-
-void MateCComponent::UpdateMate(State* state, int child_num)
+void MatePartition::UpdateMate(State* state, int child_num)
 {
     Edge edge = state->GetCurrentEdge();
-    StateFrontier<mate_t>* st = static_cast<StateFrontier<mate_t>*>(state);
+    StateFrontier<FrontierComp>* st = static_cast<StateFrontier<FrontierComp>*>(state);
 
     if (child_num == 0) { // Lo枝のとき
-        if (frontier_array[edge.src] != frontier_array[edge.dest]) { // これは常にtrueのはず
-            pair_array_[pair_count_].first = frontier_array[edge.src];
-            pair_array_[pair_count_].second = frontier_array[edge.dest];
+        if (frontier_array[edge.src].comp != frontier_array[edge.dest].comp) { // これは常にtrueのはず
+            pair_array_[pair_count_].first = frontier_array[edge.src].comp;
+            pair_array_[pair_count_].second = frontier_array[edge.dest].comp;
             ++pair_count_;
         }
     } else if (child_num == 1) { // Hi枝のとき
         int cmin, cmax;
-        if (frontier_array[edge.src] < frontier_array[edge.dest]) {
-            cmin = frontier_array[edge.src];
-            cmax = frontier_array[edge.dest];
-        } else {
-            cmin = frontier_array[edge.dest];
-            cmax = frontier_array[edge.src];
-        }
 
-        // 大きい値をすべて小さい値に書き換える (next と previous の両方）
-        for (int i = 0; i < st->GetPreviousFrontierSize(); ++i) {
-            int v = st->GetPreviousFrontierValue(i);
-            if (frontier_array[v] == cmax) {
-                frontier_array[v] = cmin;
-            }
-        }
-        for (int i = 0; i < st->GetNextFrontierSize(); ++i) {
-            int v = st->GetNextFrontierValue(i);
-            if (frontier_array[v] == cmax) {
-                frontier_array[v] = cmin;
-            }
-        }
+        comp_manager_.UpdateMate(st, child_num, &cmin, &cmax);
 
         for (int i = 0; i < pair_count_; ++i) {
             if (pair_array_[i].first == cmax) {
@@ -157,20 +135,20 @@ void MateCComponent::UpdateMate(State* state, int child_num)
         mate_t v = st->GetLeavingFrontierValue(i); // フロンティアから抜ける頂点
         bool is_exist = false;
         for (int j = 0; j < st->GetNextFrontierSize(); ++j) {
-            if (frontier_array[v] == frontier_array[st->GetNextFrontierValue(j)]) {
+            if (frontier_array[v].comp == frontier_array[st->GetNextFrontierValue(j)].comp) {
                 is_exist = true; // 更新後のフロンティアに値 v をもつものが存在する
                 break;
             }
         }
         if (!is_exist) { // 更新後のフロンティアに値 v をもつものが存在しない
             // mate_[v] の値が初回に現れたときだけ、number_of_components を1増加させる
-            if (isolating_set.count(frontier_array[v]) == 0) {
-                isolating_set.insert(frontier_array[v]);
+            if (isolating_set.count(frontier_array[v].comp) == 0) {
+                isolating_set.insert(frontier_array[v].comp);
 
                 // delete frontier_array_[v]
                 int new_count = 0;
                 for (int i = 0; i < pair_count_; ++i) {
-                    if (pair_array_[i].first != frontier_array[v] && pair_array_[i].second != frontier_array[v]) {
+                    if (pair_array_[i].first != frontier_array[v].comp && pair_array_[i].second != frontier_array[v].comp) {
                         swap_pair_array_[new_count] = pair_array_[i];
                         ++new_count;
                     }
@@ -179,54 +157,10 @@ void MateCComponent::UpdateMate(State* state, int child_num)
                 swap_pair_array_ = pair_array_;
                 pair_array_ = temp_pa;
                 pair_count_ = new_count;
-
                 ++number_of_components_;
             }
         }
     }
-
-    // start rename
-    // clear buffer
-    memset(calc_buff_, 0, (st->GetNumberOfVertices() + 1) * sizeof(mate_t));
-    int count = 1;
-    for (int i = 0; i < st->GetNextFrontierSize(); ++i) {
-        int c = st->GetNextFrontierValue(i);
-        if (frontier_array[c] > 0) {
-            if (calc_buff_[frontier_array[c]] == 0) {
-                calc_buff_[frontier_array[c]] = count;
-                swap_frontier_array_[c] = count;
-                ++count;
-            } else {
-                swap_frontier_array_[c] = calc_buff_[frontier_array[c]];
-            }
-        } else {
-            swap_frontier_array_[c] = frontier_array[c];
-        }
-    }
-    mate_t* temp_array = swap_frontier_array_;
-    swap_frontier_array_ = frontier_array;
-    frontier_array = temp_array;
-
-    for (int i = 0; i < pair_count_; ++i) {
-        if (calc_buff_[pair_array_[i].first] > 0) {
-            pair_array_[i].first = calc_buff_[pair_array_[i].first];
-        }
-        if (calc_buff_[pair_array_[i].second] > 0) {
-            pair_array_[i].second = calc_buff_[pair_array_[i].second];
-        }
-    }
-    int count_num = 0;
-    for (int i = 0; i < pair_count_; ++i) {
-        if (pair_array_[i].first != pair_array_[i].second) {
-            sort_buff_[count_num] = StateCComponent::PairToNum(pair_array_[i]);
-            ++count_num;
-        }
-    }
-    pair_count_ = count_num;
-    // end rename
-
-    std::sort(sort_buff_, sort_buff_ + pair_count_);
-    //qsort(sort_buff, pair_count_, sizeof(short), cmp);
 
     /*cout << number_of_components_ << "# ";
 
@@ -241,28 +175,57 @@ void MateCComponent::UpdateMate(State* state, int child_num)
     cout << endl;*/
 }
 
+void MatePartition::Rename(State* state)
+{
+    StatePartition* st = (StatePartition*)state;
+
+    // start rename
+    comp_manager_.Rename(st);
+
+    mate_t* calc_buff = comp_manager_.GetCalcBuff();
+
+    for (int i = 0; i < pair_count_; ++i) {
+        if (calc_buff[pair_array_[i].first] > 0) {
+            pair_array_[i].first = calc_buff[pair_array_[i].first];
+        }
+        if (calc_buff[pair_array_[i].second] > 0) {
+            pair_array_[i].second = calc_buff[pair_array_[i].second];
+        }
+    }
+    int count_num = 0;
+    for (int i = 0; i < pair_count_; ++i) {
+        if (pair_array_[i].first != pair_array_[i].second) {
+            sort_buff_[count_num] = StatePartition::PairToNum(pair_array_[i]);
+            ++count_num;
+        }
+    }
+    pair_count_ = count_num;
+    // end rename
+
+    std::sort(sort_buff_, sort_buff_ + pair_count_);
+}
+
 // mate update 前の終端判定。
 // 0終端なら 0, 1終端なら 1, どちらでもない場合は -1 を返す。
-int MateCComponent::CheckTerminalPre(State* state, int child_num)
+int MatePartition::CheckTerminalPre(State* state, int child_num)
 {
-    StateCComponent* st = static_cast<StateCComponent*>(state);
     Edge edge = state->GetCurrentEdge();
 
     if (child_num == 0) { // Lo枝のとき
-        if (frontier_array[edge.src] == frontier_array[edge.dest]) {
+        if (frontier_array[edge.src].comp == frontier_array[edge.dest].comp) {
             return 0;
         }
     } else if (child_num == 1) { // Hi枝のとき
-        if (frontier_array[edge.src] != frontier_array[edge.dest]) {
+        if (frontier_array[edge.src].comp != frontier_array[edge.dest].comp) {
             // check forbidden list
 
             int cmin, cmax;
-            if (frontier_array[edge.src] < frontier_array[edge.dest]) {
-                cmin = frontier_array[edge.src];
-                cmax = frontier_array[edge.dest];
+            if (frontier_array[edge.src].comp < frontier_array[edge.dest].comp) {
+                cmin = frontier_array[edge.src].comp;
+                cmax = frontier_array[edge.dest].comp;
             } else {
-                cmin = frontier_array[edge.dest];
-                cmax = frontier_array[edge.src];
+                cmin = frontier_array[edge.dest].comp;
+                cmax = frontier_array[edge.src].comp;
             }
 
             for (int i = 0; i < pair_count_; ++i) {
@@ -277,9 +240,9 @@ int MateCComponent::CheckTerminalPre(State* state, int child_num)
 
 // mate update 後の終端判定。
 // 0終端なら 0, 1終端なら 1, どちらでもない場合は -1 を返す。
-int MateCComponent::CheckTerminalPost(State* state)
+int MatePartition::CheckTerminalPost(State* state)
 {
-    StateCComponent* st = static_cast<StateCComponent*>(state);
+    StatePartition* st = static_cast<StatePartition*>(state);
 
     if (state->IsLastEdge()) {
         if (st->IsLe()) {
@@ -314,5 +277,42 @@ int MateCComponent::CheckTerminalPost(State* state)
         }
     }
 }
+
+std::string MatePartition::GetPreviousString(State* state)
+{
+    ostringstream oss;
+    oss << MateFrontier<FrontierComp>::GetPreviousString(state);
+    oss << ", # of comp. = " << number_of_components_ << ", ";
+
+    if (pair_count_ > 0) {
+        oss << "pair = ";
+    }
+    for (int i = 0; i < pair_count_; ++i) {
+        oss << "(" << pair_array_[i].first << ", " << pair_array_[i].second << ")";
+        if (i < pair_count_ - 1) {
+            oss << ", ";
+        }
+    }
+    return oss.str();
+}
+
+std::string MatePartition::GetNextString(State* state)
+{
+    ostringstream oss;
+    oss << MateFrontier<FrontierComp>::GetNextString(state);
+    oss << ", # of comp. = " << number_of_components_ << ", ";
+
+    if (pair_count_ > 0) {
+        oss << "pair = ";
+    }
+    for (int i = 0; i < pair_count_; ++i) {
+        oss << "(" << pair_array_[i].first << ", " << pair_array_[i].second << ")";
+        if (i < pair_count_ - 1) {
+            oss << ", ";
+        }
+    }
+    return oss.str();
+}
+
 
 } // the end of the namespace

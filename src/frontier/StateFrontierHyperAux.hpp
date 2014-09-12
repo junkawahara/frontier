@@ -18,12 +18,12 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef STATEFRONTIERAUX_HPP
-#define STATEFRONTIERAUX_HPP
+#ifndef STATEFRONTIERHYPERAUX_HPP
+#define STATEFRONTIERHYPERAUX_HPP
 
 #include <cstring>
 
-#include "StateFrontier.hpp"
+#include "StateFrontierHyper.hpp"
 #include "PseudoZDD.hpp"
 #include "ZDDNode.hpp"
 #include "Packer.hpp"
@@ -31,15 +31,9 @@
 namespace frontier_dd {
 
 //*************************************************************************************************
-// MateConfNull: configuration には（フロンティア情報以外は）何も加えないことを表すクラス
-struct MateConfNull {
-    // nothing
-};
-
-//*************************************************************************************************
-// StateFrontierAux<T>: StateFrontier<T> に付加的な configuration を管理する機能を加えたクラス
+// StateFrontierHyperAux<T>: StateFrontierHyper<T> に付加的な configuration を管理する機能を加えたクラス
 template <typename T>
-class StateFrontierAux : public StateFrontier<T> {
+class StateFrontierHyperAux : public StateFrontierHyper<T> {
 protected:
     RBuffer<byte> rbuffer_;
 
@@ -48,7 +42,7 @@ private:
     int next_buffer_size_;
 
 public:
-    StateFrontierAux(Graph* graph) : StateFrontier<T>(graph) { }
+    StateFrontierHyperAux(HyperGraph* hgraph) : StateFrontierHyper<T>(hgraph) { }
 
     void Initialize(byte* initial_conf, int initial_size)
     {
@@ -59,7 +53,7 @@ public:
 
     virtual void StartNextEdge()
     {
-        StateFrontier<T>::StartNextEdge();
+        StateFrontierHyper<T>::StartNextEdge();
 
         current_buffer_size_ = next_buffer_size_;
         next_buffer_size_ = this->GetNextAuxSize() + sizeof(int);
@@ -67,7 +61,7 @@ public:
 
     virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2) const
     {
-        if (!StateFrontier<T>::Equals(node1, node2)) {
+        if (!StateFrontierHyper<T>::Equals(node1, node2)) {
             return false;
         } else {
             const byte* p1 = rbuffer_.GetPointer(node1.p.pos_fixed);
@@ -109,7 +103,7 @@ public:
             hash_value = hash_value * 15284356289ll + p[i];
         }
 
-        hash_value += hash_value * 15284356289ll + StateFrontier<T>::GetHashValue(node);
+        hash_value += hash_value * 15284356289ll + StateFrontierHyper<T>::GetHashValue(node);
 
         return hash_value;
     }
@@ -117,7 +111,7 @@ public:
     virtual void PackMate(ZDDNode* node, Mate* mate)
     {
         PackAux(node, mate);
-        StateFrontier<T>::PackMate(node, mate);
+        StateFrontierHyper<T>::PackMate(node, mate);
     }
 
     virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num)
@@ -126,13 +120,13 @@ public:
         if (child_num == 1) {
             SeekTailAux();
         }
-        StateFrontier<T>::UnpackMate(node, mate, child_num);
+        StateFrontierHyper<T>::UnpackMate(node, mate, child_num);
     }
 
     virtual void Revert()
     {
         rbuffer_.BackHead(next_buffer_size_);
-        StateFrontier<T>::Revert();
+        StateFrontierHyper<T>::Revert();
     }
 
 protected:
@@ -160,37 +154,6 @@ protected:
 
 };
 
-
-
-/*template <>
-class StateFrontierAux<MateConfNull> : public StateFrontier {
-public:
-    StateFrontierAux(Graph* graph) : StateFrontier(graph) { }
-
-protected:
-    void PackAll(ZDDNode* node, mate_t* mate, MateConfNull* )
-    {
-        StateFrontier::Pack(node, mate);
-    }
-
-    void UnpackAll(ZDDNode* node, mate_t* mate, MateConfNull* )
-    {
-        StateFrontier::Unpack(node, mate);
-    }
-
-    void SeekTailAll()
-    {
-        StateFrontier::SeekTail();
-    }
-
-private:
-    // seal functions in Base class (StateFrontier class)
-    void Pack(ZDDNode* node, mate_t* mate);
-    void UnpackAndSeek(ZDDNode* node, mate_t* mate);
-    void Unpack(ZDDNode* node, mate_t* mate);
-    void SeekTail();
-};*/
-
 } // the end of the namespace
 
-#endif // STATEFRONTIERAUX_HPP
+#endif // STATEFRONTIERHYPERAUX_HPP

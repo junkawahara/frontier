@@ -108,7 +108,7 @@ int main(int argc, char** argv)
 	}
 
 	int n = graph->GetNumberOfVertices();
-	int nroot = sqrt(n);
+	//int nroot = sqrt(n);
 
 	S.push_back(ShortPair(1, 4));
 	S.push_back(ShortPair(1, 21));

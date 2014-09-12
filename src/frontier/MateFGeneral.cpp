@@ -38,17 +38,17 @@ Mate* StateFGeneral::MakeEmptyMate()
 
 void StateFGeneral::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
 {
-    StateFrontierAux<FrontierVarFGeneral>::UnpackMate(node, mate, child_num);
+    StateFrontierAux<FrontierDegComp>::UnpackMate(node, mate, child_num);
 
-    FrontierVarFGeneral* mate_array = static_cast<MateFGeneral*>(mate)->frontier_array;
+    FrontierDegComp* frontier_array = static_cast<MateFGeneral*>(mate)->frontier_array;
 
     for (int i = 0; i < GetEnteringFrontierSize(); ++i) {
         int v = GetEnteringFrontierValue(i);
-        mate_array[v].deg = 0;
-        mate_array[v].comp = v;
+        frontier_array[v].deg = 0;
+        frontier_array[v].comp = v + GetNumberOfVertices();
 
         if (IsInPorS(v)) {
-            static_cast<MateFGeneral*>(mate)->vset[v]->push_back(v);
+            static_cast<MateFGeneral*>(mate)->vset[v]->push_back(v + GetNumberOfVertices());
         }
     }
 }
@@ -121,7 +121,7 @@ void StateFGeneral::Store(Mate* mate, byte* data)
 		pos += sizeof(short);
 	}
 
-    for (unsigned int i = 1; i <= m->vset_count; ++i) {
+    for (int i = 1; i <= m->vset_count; ++i) {
         for (unsigned int j = 0; j < m->vset[i]->size(); ++j) {
             *reinterpret_cast<short*>(data + pos) = (*m->vset[i])[j];
             pos += sizeof(short);
@@ -145,7 +145,7 @@ void StateFGeneral::Store(Mate* mate, byte* data)
 void MateFGeneral::UpdateMate(State* state, int child_num)
 {
     Edge edge = state->GetCurrentEdge();
-    StateFrontier<mate_t>* st = static_cast<StateFrontier<mate_t>*>(state);
+    StateFGeneral* st = static_cast<StateFGeneral*>(state);
 
     if (child_num == 0) { // Lo枝のとき
 
@@ -159,28 +159,7 @@ void MateFGeneral::UpdateMate(State* state, int child_num)
 		}
 		else {
 			int cmin, cmax;
-			if (frontier_array[edge.src].comp < frontier_array[edge.dest].comp) {
-				cmin = frontier_array[edge.src].comp;
-				cmax = frontier_array[edge.dest].comp;
-			}
-			else {
-				cmin = frontier_array[edge.dest].comp;
-				cmax = frontier_array[edge.src].comp;
-			}
-
-			// 大きい値をすべて小さい値に書き換える (next と previous の両方）
-			for (int i = 0; i < st->GetPreviousFrontierSize(); ++i) {
-				int v = st->GetPreviousFrontierValue(i);
-				if (frontier_array[v].comp == cmax) {
-					frontier_array[v].comp = cmin;
-				}
-			}
-			for (int i = 0; i < st->GetNextFrontierSize(); ++i) {
-				int v = st->GetNextFrontierValue(i);
-				if (frontier_array[v].comp == cmax) {
-					frontier_array[v].comp = cmin;
-				}
-			}
+            comp_manager_.UpdateMate(st, child_num, &cmin, &cmax);
 
 			for (unsigned int i = 0; i < vset[cmax]->size(); ++i) {
 				vset[cmin]->push_back((*vset[cmax])[i]);
@@ -206,56 +185,50 @@ void MateFGeneral::UpdateMate(State* state, int child_num)
             if (isolating_set.count(frontier_array[v].comp) == 0) {
                 isolating_set.insert(frontier_array[v].comp);
 
-                ++cc;
+                if (!st->IsIgnoreIsolated() || frontier_array[v].deg > 0) {
+                    ++cc;
+                }
             }
         }
     }
 
-    // start rename
-    // clear buffer
-    memset(calc_buff_, 0, (st->GetNumberOfVertices() + 1) * sizeof(mate_t));
-    int count = 0;
-    for (int i = 0; i < st->GetNextFrontierSize(); ++i) {
-        int c = st->GetNextFrontierValue(i);
-        if (frontier_array[c].comp > 0) {
-            if (calc_buff_[frontier_array[c].comp] == 0) {
-				++count;
-                calc_buff_[frontier_array[c].comp] = count;
-                swap_frontier_array_[c] = count;
-
-				vector<mate_t>* temp = vset[frontier_array[c].comp];
-				vset[frontier_array[c].comp] = swap_vset[count];
-				swap_vset[count] = temp;
-            } else {
-                swap_frontier_array_[c] = calc_buff_[frontier_array[c].comp];
-            }
-        } else {
-            swap_frontier_array_[c] = frontier_array[c].comp;
-        }
-    }
-    for (int i = 0; i < st->GetNextFrontierSize(); ++i) {
-        int c = st->GetNextFrontierValue(i);
-
-        frontier_array[c].comp = swap_frontier_array_[c];
-    }
-
-	std::vector<mate_t>** temp2 = vset;
-	vset = swap_vset;
-	swap_vset = temp2;
-
-	for (int i = 1; i <= state->GetNumberOfVertices(); ++i) {
-		swap_vset[i]->clear();
-	}
-
-	vset_count = count;
-    // end rename
-
+    
     /*cout << number_of_components_ << "# ";
 
     for (int i = 1; i <= st->GetNumberOfVertices(); ++i) {
         cout << frontier_array[i] << ", ";
     }
     cout << endl;*/
+}
+
+void MateFGeneral::Rename(State* state)
+{
+    StateFGeneral* st = static_cast<StateFGeneral*>(state);
+
+    comp_manager_.Rename(st);
+
+    mate_t* calc_buff = comp_manager_.GetCalcBuff();
+
+    int count = 0;
+    for (int i = 1; i <= 2 * state->GetNumberOfVertices(); ++i) {
+        if (calc_buff[i] > 0) {
+            ++count;
+            vector<mate_t>* temp = vset[i];
+            vset[i] = swap_vset[calc_buff[i]];
+            swap_vset[calc_buff[i]] = temp;
+        }
+    }
+
+	std::vector<mate_t>** temp2 = vset;
+	vset = swap_vset;
+	swap_vset = temp2;
+
+	for (int i = 1; i <= 2 * state->GetNumberOfVertices(); ++i) {
+		swap_vset[i]->clear();
+	}
+
+	vset_count = count;
+    // end rename
 }
 
 // mate update 前の終端判定。
@@ -292,6 +265,9 @@ int MateFGeneral::CheckTerminalPost(State* state)
     StateFGeneral* st = static_cast<StateFGeneral*>(state);
     Edge edge = state->GetCurrentEdge();
 
+    //printf("deg = %d %d %d %d, ", frontier_array[1].deg, frontier_array[2].deg, frontier_array[3].deg, frontier_array[4].deg);
+    //printf("comp = %d %d %d %d, ", frontier_array[1].comp, frontier_array[2].comp, frontier_array[3].comp, frontier_array[4].comp);
+
     // Line 7-8
     if (frontier_array[edge.src].deg > *max_element(st->D_[edge.src].begin(), st->D_[edge.src].end())
         || frontier_array[edge.dest].deg > *max_element(st->D_[edge.dest].begin(), st->D_[edge.dest].end())) {
@@ -310,17 +286,21 @@ int MateFGeneral::CheckTerminalPost(State* state)
     // Line 11-22
     for (int i = 0; i < st->GetLeavingFrontierSize(); ++i) {
         mate_t u = st->GetLeavingFrontierValue(i); // フロンティアから抜ける頂点 u
+        //printf("yy%d: ", u);
         if (!IsIn(frontier_array[u].deg, st->D_[u])) { // Line 12-13
             return 0;
         }
+        //printf("zz: ");
         bool f = false;
         for (int j = 0; j < st->GetNextFrontierSize(); ++j) { // Line 15-17
             mate_t z = st->GetNextFrontierValue(j);
+            //printf("(%d, %d, %d, %d)", u, z, frontier_array[u].comp, frontier_array[z].comp);
             if (frontier_array[u].comp == frontier_array[z].comp) { // Line 16-17
                 f = true;
                 break;
             }
         }
+        //printf("pp: %s", (f ? "t" : "f"));
 		if (!f) { // Line 18
 			if (st->IsUsingCC() && cc > *max_element(st->C_.begin(), st->C_.end())) { // Line 19-20
 				return 0;
@@ -329,6 +309,7 @@ int MateFGeneral::CheckTerminalPost(State* state)
 			for (unsigned int i = 0; i < st->P_.size(); ++i) {
 				int vv = FindComponentNumber(vset, vset_count, st->P_[i].first);
 				int vvv = FindComponentNumber(vset, vset_count, st->P_[i].second);
+                //printf("xx%d, %d, %d, %d\n", vv, vvv, u, frontier_array[u].comp);
 				if (vv == frontier_array[u].comp && vv != vvv) {
 					return 0;
 				}
@@ -353,5 +334,62 @@ int MateFGeneral::CheckTerminalPost(State* state)
     }
     return -1; // Line 32
 }
+
+template<>
+std::string MateFrontier<FrontierDegComp>::GetPreviousString(State* state)
+{
+    StateFrontier<mate_t>* st = (StateFrontier<mate_t>*)state;
+    std::ostringstream oss;
+    std::vector<mate_t> vec;
+
+    oss << "deg[";
+    for (int i = 0; i < st->GetPreviousFrontierSize(); ++i) {
+        mate_t u = st->GetPreviousFrontierValue(i);
+
+        vec.push_back(frontier_array[u].deg);
+        oss << u << ", ";
+    }
+    oss << "] = [";
+
+    for (unsigned int i = 0; i < vec.size(); ++i) {
+        oss << vec[i] << ", ";
+    }
+    oss << "], ";
+
+    return oss.str();
+}
+
+template<>
+std::string MateFrontier<FrontierDegComp>::GetNextString(State* )
+{
+    std::string str;
+
+    return str;
+}
+
+std::string MateFGeneral::GetPreviousString(State* state)
+{
+    ostringstream oss;
+    oss << MateFrontier<FrontierDegComp>::GetPreviousString(state);
+    //oss << ", # of comp. = " << number_of_components_ << ", ";
+
+    // under const.
+
+    return oss.str();
+}
+
+
+std::string MateFGeneral::GetNextString(State* state)
+{
+    ostringstream oss;
+    oss << MateFrontier<FrontierDegComp>::GetNextString(state);
+    //oss << ", # of comp. = " << number_of_components_ << ", ";
+
+    // under const.
+
+    return oss.str();
+}
+
+
 
 } // the end of the namespace

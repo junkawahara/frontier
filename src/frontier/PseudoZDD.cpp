@@ -130,6 +130,9 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
 
     // 各辺について、以下を実行する。
     for (int edge = 1; edge <= state->GetNumberOfEdges(); ++edge) {
+
+        DebugPrintf("start edge: %d\n", edge);
+
         // 次の辺の処理を開始
         state->StartNextEdge();
 
@@ -143,6 +146,7 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
             // Lo枝とHi枝について処理をする
             //（child_num が 0 のとき Lo枝、child_num が 1 のとき Hi枝についての処理）
             for (int child_num = 0; child_num < state->GetNumberOfChildren(); ++child_num) {
+
                 // 子ノード
                 ZDDNode* child_node = MakeChildNode(node, mate, state, child_num, zdd);
 
@@ -161,6 +165,9 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
                     }
                 }
                 zdd->SetChildNode(node, child_node, child_num);
+
+                DebugPrintf("\t%d-child: id = " PERCENT_D ": ", child_num, zdd->GetId(child_node));
+                DebugPrintf("%s\n", mate->GetNextString(state).c_str());
             }
         }
         global_hash_table.Flush();
@@ -179,6 +186,13 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
 {
     state->UnpackMate(node, mate, child_num);
 
+#ifdef DEBUG
+    if (child_num == 0) {
+        DebugPrintf("node id = " PERCENT_D "\n", zdd->GetId(node));
+        DebugPrintf("%s\n", mate->GetPreviousString(state).c_str());
+    }
+#endif
+
     int c = mate->CheckTerminalPre(state, child_num); // 終端に遷移するか事前にチェック
     if (c == 0) { // 0終端に行くとき
         return zdd->GetZeroNode(); // 0終端を返す
@@ -194,6 +208,8 @@ PseudoZDD* FrontierAlgorithm::Construct(State* state)
     } else if (c == 1) { // 1終端に行くとき
         return zdd->GetOneNode(); // 1終端を返す
     } else {
+        mate->Rename(state);
+
         ZDDNode* child_node = zdd->CreateNode();
         state->PackMate(child_node, mate);
         return child_node;

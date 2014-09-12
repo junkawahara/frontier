@@ -24,6 +24,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <string>
 #include <iostream>
 #include <cassert>
 #include <cstdio>
@@ -149,6 +150,9 @@ public:
     virtual void UpdateMate(State* state, int child_num) = 0;
     virtual int CheckTerminalPre(State* state, int child_num) = 0;
     virtual int CheckTerminalPost(State* state) = 0;
+    virtual void Rename(State* ) { }
+    virtual std::string GetPreviousString(State* ) { return std::string(""); } // for debug
+    virtual std::string GetNextString(State* ) { return std::string(""); } // for debug
 };
 
 //*************************************************************************************************

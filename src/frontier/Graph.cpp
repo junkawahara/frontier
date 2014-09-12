@@ -242,16 +242,16 @@ void Graph::RearrangeByBreadthFirst(int start_vertex)
             edge_array_.push_back(Edge(v0, w));
         }
     }
-    if (old_edge_list.size() > 0) {
-        cerr << "old_edge_list > 0" << endl;
-        exit(1);
-    }
-    for (uint i = 1; i < visited_vertex_array.size(); ++i) {
-        if (!visited_vertex_array[i]) {
-            cerr << "visited_vertex_array[" << i << "] == false" << endl;
-            exit(1);
-        }
-    }
+    //if (old_edge_list.size() > 0) {
+    //    cerr << "old_edge_list > 0" << endl;
+    //    exit(1);
+    //}
+    //for (uint i = 1; i < visited_vertex_array.size(); ++i) {
+    //    if (!visited_vertex_array[i]) {
+    //        cerr << "visited_vertex_array[" << i << "] == false" << endl;
+    //        exit(1);
+    //    }
+    //}
 }
 
 void Graph::AddDummyVertex()

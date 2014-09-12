@@ -23,31 +23,21 @@
 
 #include "StateFrontierAux.hpp"
 #include "PseudoZDD.hpp"
-#include "MateCComponent.hpp"
+#include "CompManager.hpp"
 
 namespace frontier_dd {
 
 class MateFGeneral;
 
-struct VarTypeFGeneral {
-    int size;
-    double sum;
-};
-
-struct FrontierVarFGeneral {
-    mate_t deg;
-    mate_t comp;
-};
-
-static bool IsIn(int number, const std::vector<mate_t>& vec)
+static inline bool IsIn(int number, const std::vector<mate_t>& vec)
 {
 	return std::find(vec.begin(), vec.end(), number) != vec.end();
 }
 
 //*************************************************************************************************
-// StateFGeneral: 連結成分のための State
-class StateFGeneral : public StateFrontierAux<FrontierVarFGeneral> {
-public: // fixme!!!
+// StateFGeneral:
+class StateFGeneral : public StateFrontierAux<FrontierDegComp> {
+protected:
     std::vector<std::vector<mate_t> > D_;
     std::vector<ShortPair> P_;
     std::vector<ShortPair> S_;
@@ -59,6 +49,8 @@ public: // fixme!!!
 	bool is_using_cycle_;
 	bool is_using_noe_;
 
+    bool ignore_isolated_;
+
 public:
     StateFGeneral(Graph* graph, const std::vector<std::vector<mate_t> >& D,
                   const std::vector<ShortPair>& P,
@@ -66,8 +58,8 @@ public:
                   const std::vector<mate_t>& C,
                   const std::vector<mate_t>& Q,
                   const std::vector<mate_t>& T)
-        : StateFrontierAux<FrontierVarFGeneral>(graph), D_(D), P_(P), S_(S), C_(C), Q_(Q), T_(T),
-		is_using_cc_(false), is_using_cycle_(false), is_using_noe_(false)
+        : StateFrontierAux<FrontierDegComp>(graph), D_(D), P_(P), S_(S), C_(C), Q_(Q), T_(T),
+          is_using_cc_(false), is_using_cycle_(false), is_using_noe_(false), ignore_isolated_(false)
     {
 		int n = graph->GetNumberOfVertices();
 		int m = graph->GetNumberOfEdges();
@@ -105,7 +97,7 @@ public:
 		}
 		*reinterpret_cast<int*>(initial_conf) = pos - sizeof(int);
 
-        StateFrontierAux<FrontierVarFGeneral>::Initialize(initial_conf, pos - sizeof(int));
+        StateFrontierAux<FrontierDegComp>::Initialize(initial_conf, pos - sizeof(int));
     }
 
     virtual ~StateFGeneral() { }
@@ -124,6 +116,16 @@ public:
 	{
 		return is_using_noe_;
 	}
+
+    bool IsIgnoreIsolated()
+    {
+        return ignore_isolated_;
+    } 
+
+    void SetIgnoreIsolated(bool ignore_isolated)
+    {
+        ignore_isolated_ = ignore_isolated;
+    }
 
     bool IsInPorS(int number)
     {
@@ -153,11 +155,13 @@ public:
     virtual Mate* MakeEmptyMate();
     //virtual void PackMate(ZDDNode* node, Mate* mate);
     virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num);
+
+    friend class MateFGeneral;
 };
 
 //*************************************************************************************************
 // MateFGeneral
-class MateFGeneral : public MateFrontier<FrontierVarFGeneral> {
+class MateFGeneral : public MateFrontier<FrontierDegComp> {
 public:
     std::vector<mate_t>** vset;
     short vset_count;
@@ -165,13 +169,15 @@ public:
     bool cycle;
     short noe;
 
-    mate_t* calc_buff_;
-    mate_t* swap_frontier_array_;
 	std::vector<mate_t>** swap_vset;
 
+private:
+    CompManager<FrontierDegComp> comp_manager_;
+
 public:
-    MateFGeneral(State* state) : MateFrontier<FrontierVarFGeneral>(state),
-                                 vset_count(0), cc(0), cycle(false), noe(0)
+    MateFGeneral(State* state) : MateFrontier<FrontierDegComp>(state),
+                                 vset_count(0), cc(0), cycle(false), noe(0),
+                                 comp_manager_(frontier_array, state->GetNumberOfVertices())
     {
         int n = state->GetNumberOfVertices();
 
@@ -180,9 +186,6 @@ public:
         for (int i = 1; i <= n; ++i) {
             vset[i] = new std::vector<mate_t>(); // need delete somewhere
         }
-
-        calc_buff_ = new mate_t[n + 1];
-        swap_frontier_array_ = new mate_t[n + 1];
 
 		swap_vset = new std::vector<mate_t>*[n + 1];
 		swap_vset[0] = NULL;
@@ -193,7 +196,7 @@ public:
 
     static int FindComponentNumber(std::vector<mate_t>** vv, int vset_c, int number)
     {
-        for (unsigned int i = 1; i <= vset_c; ++i) {
+        for (int i = 1; i <= vset_c; ++i) {
             for (unsigned int j = 0; j < vv[i]->size(); ++j) {
                 if ((*vv[i])[j] == number) {
                     return i;
@@ -206,7 +209,17 @@ public:
     virtual void UpdateMate(State* state, int child_num);
     virtual int CheckTerminalPre(State* state, int child_num);
     virtual int CheckTerminalPost(State* state);
+    virtual void Rename(State* state);
+
+    virtual std::string GetPreviousString(State* state);
+    virtual std::string GetNextString(State* state);
 };
+
+template<>
+std::string MateFrontier<FrontierDegComp>::GetPreviousString(State* state);
+template<>
+std::string MateFrontier<FrontierDegComp>::GetNextString(State* state);
+
 
 } // the end of the namespace
 

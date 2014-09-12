@@ -166,6 +166,8 @@ public:
     bool Judge(const std::vector<int>& sequence);
     void SampleUniformlyRandomly(std::vector<int>* result);
 
+    double GetProb(const std::vector<double>& weight_array);
+
     void ImportZDD(std::istream& ist, bool is_hex);
 
 private:
