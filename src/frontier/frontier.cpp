@@ -43,6 +43,7 @@
 #include "MateSTPath.hpp"
 #include "MateSTPathDist.hpp"
 #include "MatePartition.hpp"
+#include "MateFGeneral.hpp"
 //#include "MatePathMatching.hpp"
 //#include "MateMTPath.hpp"
 //#include "MateDSTPath.hpp"
@@ -113,6 +114,7 @@ int main(int argc, char** argv)
     string print_graph_filename = "";
     bool is_print_graphviz = false; // print the input graph for graphviz
     string print_graphviz_filename = "";
+    string gen_parameter_filename = ""; // for FGeneral
     bool is_breadth_first = false; // rename vertex numbers by the breadth-first search if true
     int start_vertex = 1; // start vertex number for (directed / undirected) s-t path
     int end_vertex = -1;  // end vertex number for (directed / undirected) s-t path
@@ -123,10 +125,15 @@ int main(int argc, char** argv)
     string terminal_filename = "";
     bool is_set_weight = false;
     string weight_filename = "";
+    bool is_set_vertex_weight = false;
+    string vertex_weight_filename = "";
     bool is_use_upper = false;
     double upper_bound = 99999999.0;
     bool is_le = false; // for enumeration of components
     bool is_me = false; // for enumeration of components
+    int max_vertex_weight = -1;
+    bool is_ignore_isolated = false;
+    bool is_print_parameter = false;
     bool is_reduce = false; // reduce the ZDD
     bool is_print_pzdd = true; // print the (pseudo) ZDD
     bool is_print_zdd_graphviz = false; // print the (pseudo) ZDD for graphviz
@@ -162,6 +169,7 @@ int main(int argc, char** argv)
         PARTITION,    // partition
         KCUT,    // k-cut
         RCUT,    // rooted k-cut
+        GENERAL, // generalized frontier-based method
         SETPT,   // set partition on a hypergraph
         SETC,    // set cover
         SETPK,   // set packing
@@ -217,6 +225,8 @@ int main(int argc, char** argv)
                     enum_kind = KCUT;
                 } else if (kind == "rcut") {
                     enum_kind = RCUT;
+                } else if (kind == "general") {
+                    enum_kind = GENERAL;
                 } else if (kind == "setpt") {
                     enum_kind = SETPT;
                 } else if (kind == "setc") {
@@ -283,12 +293,18 @@ int main(int argc, char** argv)
             loading_kind = INC_MATRIX;
         } else if (arg == "--input-el" || arg == "-c") {
             loading_kind = EDGE_LIST;
-        //} else if (arg == "-w" || arg == "--weight") {
-        //    is_set_weight = true;
-        //    if (i + 1 < argc) {
-        //        weight_filename = argv[i + 1];
-        //        ++i;
-        //    }
+        } else if (arg == "-w" || arg == "--weight" || arg == "--edge-weight") {
+            is_set_weight = true;
+            if (i + 1 < argc) {
+                weight_filename = argv[i + 1];
+                ++i;
+            }
+        } else if (arg == "--vertex-weight") {
+            is_set_vertex_weight = true;
+            if (i + 1 < argc) {
+                vertex_weight_filename = argv[i + 1];
+                ++i;
+            }
         } else if (arg == "-b") {
             is_breadth_first = true;
         } else if (arg == "-s") {
@@ -320,6 +336,15 @@ int main(int argc, char** argv)
             is_le = true;
         } else if (arg == "--me") {
             is_me = true;
+        } else if (arg == "--max-vw" || arg == "--max-vertex-weight") {
+            if (i + 1 < argc) {
+                max_vertex_weight = atoi(argv[i + 1]);
+                ++i;
+            }
+        } else if (arg == "--ignore-isolated") {
+            is_ignore_isolated = true;
+        } else if (arg == "--print-parameter") {
+            is_print_parameter = true;
         } else if (arg == "-f") {
             // -f オプションの後は "-f 1 3 7 9" のように整数が並ぶので、それをパースする。
             while (i + 1 < argc && argv[i + 1][0] != '-') {
@@ -359,6 +384,11 @@ int main(int argc, char** argv)
             is_print_zdd_sbdd = true;
             if (i + 1 < argc) {
                 print_zdd_sbdd_filename = argv[i + 1];
+                ++i;
+            }
+        } else if (arg == "--parameter") {
+            if (i + 1 < argc) {
+                gen_parameter_filename = argv[i + 1];
                 ++i;
             }
         } else if (arg == "--no-solution") {
@@ -443,6 +473,7 @@ int main(int argc, char** argv)
     case PARTITION:
     case KCUT:
     case RCUT:
+    case GENERAL:
         graph = new Graph();
         igraph = graph;
         break;
@@ -497,7 +528,21 @@ int main(int argc, char** argv)
 
     if (is_set_weight) {
         ifstream ifs(weight_filename.c_str());
-        igraph->SetWeightToEach(ifs);
+        if (!!ifs) {
+            igraph->SetWeightToEach(ifs);
+        } else {
+            cerr << "cannot open " << weight_filename << endl;
+            exit(1);
+        }
+    }
+    if (is_set_vertex_weight) {
+        ifstream ifs(vertex_weight_filename.c_str());
+        if (!!ifs) {
+            igraph->SetVertexWeight(ifs);
+        } else {
+            cerr << "cannot open " << weight_filename << endl;
+            exit(1);
+        }
     }
 
     if (is_breadth_first) {
@@ -628,6 +673,9 @@ int main(int argc, char** argv)
     case PARTITION:
         state = new StatePartition(graph, (is_use_upper ? static_cast<short>(upper_bound) :
             SHRT_MAX), is_le, is_me);
+        if (max_vertex_weight >= 0) {
+            static_cast<StatePartition*>(state)->SetMaxVertexWeight(max_vertex_weight);
+        }
         break;
     case KCUT:
         cerr << "not implemented yet." << endl;
@@ -641,6 +689,19 @@ int main(int argc, char** argv)
 
         //state = new StateRcut(graph, upper_bound);
         //static_cast<StateRcut*>(state)->SetRootManager(&root_mgr);
+        break;
+    case GENERAL:
+        if (gen_parameter_filename == "") {
+            cerr << "Please specify a filename for parameter." << endl;
+            exit(1);
+        }
+        state = new StateFGeneral(graph, gen_parameter_filename);
+        if (is_ignore_isolated) {
+            static_cast<StateFGeneral*>(state)->SetIgnoreIsolated(true);
+        }
+        if (is_print_parameter) {
+            static_cast<StateFGeneral*>(state)->PrintParameter(cerr);
+        }
         break;
     case SETPT:
         cerr << "not implemented yet." << endl;

@@ -99,6 +99,11 @@ public:
         ++current_edge_;
     }
 
+    bool IsUsingVertexWeight() // need to impl. for HyperGraph
+    {
+        return graph_->IsUsingVertexWeight();
+    }
+
     void SetPrintProgress(bool is_print_progress)
     {
         is_print_progress_ = is_print_progress;
@@ -106,7 +111,7 @@ public:
 
     void PrintNodeNum(intx node_num)
     {
-        if (is_print_progress_){
+        if (is_print_progress_) {
             while (print_counter_ > 0) {
                 std::cerr << "\b";
                 --print_counter_;
@@ -115,6 +120,16 @@ public:
             char buff[256];
             print_counter_ = sprintf(buff, "edge %d: " PERCENT_D, current_edge_, node_num);
             std::cerr << buff;
+        }
+    }
+
+    void ErasePrintedNodeNum()
+    {
+        if (is_print_progress_) {
+            while (print_counter_ > 0) {
+                std::cerr << "\b";
+                --print_counter_;
+            }
         }
     }
 

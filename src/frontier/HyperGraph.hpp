@@ -58,6 +58,7 @@ public:
         bool is_directed = false);
 
     virtual void SetWeightToEach(std::istream& ist);
+    virtual void SetVertexWeight(std::istream& ist);
 
     virtual void PrintAdjacencyList(std::ostream& ost) const;
     virtual void PrintAdjacencyMatrix(std::ostream& ost) const;

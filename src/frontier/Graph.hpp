@@ -46,6 +46,7 @@ private:
     bool is_directed_;
     bool is_simple_;
     std::vector<Edge> edge_array_;
+    std::vector<int> vertex_weight_array_;
     std::vector<std::vector<double> > dist_matrix_;
 
 public:
@@ -64,6 +65,17 @@ public:
         bool is_directed = false);
 
     virtual void SetWeightToEach(std::istream& ist);
+    virtual void SetVertexWeight(std::istream& ist);
+
+    virtual int GetVertexWeight(int v)
+    {
+        return vertex_weight_array_[v];
+    }
+
+    virtual int IsUsingVertexWeight()
+    {
+        return vertex_weight_array_.size() > 0;
+    }
 
     virtual void PrintAdjacencyList(std::ostream& ost) const;
     virtual void PrintAdjacencyMatrix(std::ostream& ost) const;

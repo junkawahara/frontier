@@ -115,6 +115,12 @@ void HyperGraph::SetWeightToEach(istream& ist)
     }
 }
 
+void HyperGraph::SetVertexWeight(istream& )
+{
+    cerr << "HyperGraph::SetVertexWeight is not implemented." << endl;
+    exit(1);
+}
+
 void HyperGraph::PrintAdjacencyList(ostream&) const
 {
     cerr << "HyperGraph::PrintAdjacencyList is not implemented." << endl;

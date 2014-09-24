@@ -27,6 +27,8 @@
 
 #include <climits>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 #ifdef HAVE_LIBGMPXX
 #include <gmpxx.h>
@@ -90,6 +92,19 @@ struct ShortPair {
 		second = s;
 	}
 };
+
+template<typename T>
+inline bool IsIn(T element, const std::vector<T>& vec)
+{
+	return std::find(vec.begin(), vec.end(), element) != vec.end();
+}
+
+template<typename T>
+inline bool IsIn(int element, const std::vector<T>& vec)
+{
+	return std::find(vec.begin(), vec.end(), static_cast<T>(element)) != vec.end();
+}
+
 
 #ifdef DEBUG
 #define DebugPrintf(format, ...)  fprintf(stderr, format, __VA_ARGS__)

@@ -95,7 +95,8 @@ public:
         }
     }
 
-    void Rename(StateFrontier<T>* state)
+    // returned value: the number of components
+    mate_t Rename(StateFrontier<T>* state)
     {
         // start rename
         // clear buffer
@@ -123,6 +124,8 @@ public:
         //swap_frontier_array_ = frontier_array;
         //frontier_array = temp_array;
         // end rename
+
+        return count - 1;
     }
 };
 

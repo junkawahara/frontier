@@ -126,6 +126,29 @@ void Graph::SetWeightToEach(istream& ist)
     }
 }
 
+void Graph::SetVertexWeight(istream& ist)
+{
+    int c;
+    bool is_end = false;
+
+    vertex_weight_array_.clear();
+    vertex_weight_array_.push_back(0);
+
+    for (int i = 0; i < number_of_vertices_; ++i)
+    {
+        if (is_end) {
+            vertex_weight_array_.push_back(1);
+        } else {
+            if (ist >> c) {
+                vertex_weight_array_.push_back(c);
+            } else {
+                is_end = true;
+                vertex_weight_array_.push_back(1);
+            }
+        }
+    }
+}
+
 void Graph::PrintAdjacencyList(ostream& ost) const
 {
     for (int i = 1; i <= number_of_vertices_; ++i) {

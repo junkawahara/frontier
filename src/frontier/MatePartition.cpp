@@ -46,30 +46,53 @@ void StatePartition::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
     for (int i = 0; i < GetEnteringFrontierSize(); ++i) {
         int v = GetEnteringFrontierValue(i);
         frontier_array[v].comp = v + GetNumberOfVertices();
+        if (graph_->IsUsingVertexWeight()) {
+            static_cast<MatePartition*>(mate)->comp_weight_array_[v + GetNumberOfVertices()] = graph_->GetVertexWeight(v);
+        }
     }
 }
 
 int StatePartition::GetNextAuxSize()
 {
     int n = GetNextFrontierSize();
-    return n * n - n + 2;
+    if (graph_->IsUsingVertexWeight()) {
+        return n * n - n + 2 + 2 * n * sizeof(int) + sizeof(mate_t);
+    } else {
+        return n * n - n + 2;
+    }
 }
 
 void StatePartition::Load(Mate* mate, byte* data)
 {
-    MatePartition* m = static_cast<MatePartition*>(mate);
+    MatePartition* mate2 = static_cast<MatePartition*>(mate);
 
-    int n = *reinterpret_cast<int*>(data) / 2 - 1;
-    m->number_of_components_ = *reinterpret_cast<short*>(data + sizeof(int));
+    int size = *reinterpret_cast<int*>(data);
+    mate2->number_of_components_ = *reinterpret_cast<short*>(data + sizeof(int));
+
+    int pos = sizeof(int) + sizeof(short);
+
+    if (graph_->IsUsingVertexWeight()) {
+        //size -= 2 * m->number_of_components_ - sizeof(mate_t);
+
+        mate2->current_comp_num_ = *reinterpret_cast<mate_t*>(data + pos);
+        pos += sizeof(mate_t);
+
+        for (int i = 1; i <= mate2->current_comp_num_; ++i) {
+            mate2->comp_weight_array_[i] = *reinterpret_cast<int*>(data + pos);
+            pos += sizeof(int);
+        }
+        for (int i = mate2->current_comp_num_ + 1; i <= 2 * GetNumberOfVertices(); ++i) { // really need?
+            mate2->comp_weight_array_[i] = 0;
+        }
+    }
     //printf("Load %d %d %d %d %d %d %d %d\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
     //printf("Load pointer = %p, n = %d, # of comp = %d", data, n, m->number_of_components_);
 
-    int pos = sizeof(int) + sizeof(short);
-    m->pair_count_ = 0;
-    for (int i = 0; i < n; ++i) {
-        m->pair_array_[i] = num_to_pair_table_[*reinterpret_cast<short*>(data + pos)];
+    mate2->pair_count_ = 0;
+    while (pos < size + static_cast<int>(sizeof(int))) {
+        mate2->pair_array_[mate2->pair_count_] = num_to_pair_table_[*reinterpret_cast<short*>(data + pos)];
         //printf(", (%d, %d)", m->pair_array_[i].first, m->pair_array_[i].second);
-        ++m->pair_count_;
+        ++mate2->pair_count_;
         pos += sizeof(short);
     }
     //printf("\n");
@@ -77,24 +100,31 @@ void StatePartition::Load(Mate* mate, byte* data)
 
 void StatePartition::Store(Mate* mate, byte* data)
 {
-    MatePartition* m = static_cast<MatePartition*>(mate);
+    MatePartition* mate2 = static_cast<MatePartition*>(mate);
 
-    *reinterpret_cast<short*>(data + sizeof(int)) = m->number_of_components_;
+    *reinterpret_cast<short*>(data + sizeof(int)) = mate2->number_of_components_;
     //printf("store pointer = %p, # of comp = %d", data, m->number_of_components_);
 
     int pos = sizeof(int) + sizeof(short);
-    int count = 0;
-    for (int i = 0; i < m->pair_count_; ++i) {
-        if (i < m->pair_count_ - 1 && m->sort_buff_[i] == m->sort_buff_[i + 1]) {
+
+    if (graph_->IsUsingVertexWeight()) {
+        *reinterpret_cast<mate_t*>(data + pos) = mate2->current_comp_num_;
+        pos += sizeof(mate_t);
+
+        for (int i = 1; i <= mate2->current_comp_num_; ++i) {
+            *reinterpret_cast<int*>(data + pos) = mate2->comp_weight_array_[i];
+            pos += sizeof(int);
+        }
+    }
+    for (int i = 0; i < mate2->pair_count_; ++i) {
+        if (i < mate2->pair_count_ - 1 && mate2->sort_buff_[i] == mate2->sort_buff_[i + 1]) {
             continue;
         }
-        ++count;
-        *reinterpret_cast<short*>(data + pos) = m->sort_buff_[i];
+        *reinterpret_cast<short*>(data + pos) = mate2->sort_buff_[i];
         //printf(", %d(%d, %d)", PairToNum(m->pair_array_[i]), m->pair_array_[i].first, m->pair_array_[i].second);
         pos += sizeof(short);
     }
-
-    *reinterpret_cast<int*>(data) = 2 + 2 * count;
+    *reinterpret_cast<int*>(data) = pos - sizeof(int);
 
     //printf("Store %d %d %d %d %d %d %d %d\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 }
@@ -117,6 +147,11 @@ void MatePartition::UpdateMate(State* state, int child_num)
         int cmin, cmax;
 
         comp_manager_.UpdateMate(st, child_num, &cmin, &cmax);
+
+        if (state->IsUsingVertexWeight()) {
+            comp_weight_array_[cmin] += comp_weight_array_[cmax];
+            comp_weight_array_[cmax] = 0;
+        }
 
         for (int i = 0; i < pair_count_; ++i) {
             if (pair_array_[i].first == cmax) {
@@ -180,7 +215,7 @@ void MatePartition::Rename(State* state)
     StatePartition* st = (StatePartition*)state;
 
     // start rename
-    comp_manager_.Rename(st);
+    current_comp_num_ = comp_manager_.Rename(st);
 
     mate_t* calc_buff = comp_manager_.GetCalcBuff();
 
@@ -201,6 +236,20 @@ void MatePartition::Rename(State* state)
     }
     pair_count_ = count_num;
     // end rename
+
+    if (state->IsUsingVertexWeight()) {
+        for (int i = 1; i <= 2 * state->GetNumberOfVertices(); ++i) {
+            swap_comp_weight_array_[i] = 0;
+        }
+
+        for (int i = 1; i <= 2 * state->GetNumberOfVertices(); ++i) {
+            //cerr << "i = " << i << ", c[i] = " << calc_buff[i] << ", w[i] = " << comp_weight_array_[i] << endl;
+            if (calc_buff[i] > 0) {
+                swap_comp_weight_array_[calc_buff[i]] = comp_weight_array_[i];
+            }
+        }
+        std::swap(comp_weight_array_, swap_comp_weight_array_);
+    }
 
     std::sort(sort_buff_, sort_buff_ + pair_count_);
 }
@@ -226,6 +275,13 @@ int MatePartition::CheckTerminalPre(State* state, int child_num)
             } else {
                 cmin = frontier_array[edge.dest].comp;
                 cmax = frontier_array[edge.src].comp;
+            }
+
+            if (state->IsUsingVertexWeight()) {
+                if (cmin != cmax && comp_weight_array_[cmin] + comp_weight_array_[cmax] >
+                    static_cast<StatePartition*>(state)->GetMaxVertexWeight()) {
+                    return 0;
+                }
             }
 
             for (int i = 0; i < pair_count_; ++i) {
@@ -284,6 +340,17 @@ std::string MatePartition::GetPreviousString(State* state)
     oss << MateFrontier<FrontierComp>::GetPreviousString(state);
     oss << ", # of comp. = " << number_of_components_ << ", ";
 
+    if (state->IsUsingVertexWeight()) {
+        oss << "weight = [";
+        for (int i = 1; i <= current_comp_num_; ++i) {
+            oss << comp_weight_array_[i];
+            if (i < current_comp_num_) {
+                oss << ", ";
+            }
+        }
+        oss << "], ";
+    }
+
     if (pair_count_ > 0) {
         oss << "pair = ";
     }
@@ -301,6 +368,17 @@ std::string MatePartition::GetNextString(State* state)
     ostringstream oss;
     oss << MateFrontier<FrontierComp>::GetNextString(state);
     oss << ", # of comp. = " << number_of_components_ << ", ";
+
+    if (state->IsUsingVertexWeight()) {
+        oss << "weight = [";
+        for (int i = 1; i <= current_comp_num_; ++i) {
+            oss << comp_weight_array_[i];
+            if (i < current_comp_num_) {
+                oss << ", ";
+            }
+        }
+        oss << "], ";
+    }
 
     if (pair_count_ > 0) {
         oss << "pair = ";

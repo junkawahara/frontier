@@ -305,6 +305,7 @@ void PseudoZDD::AddNodeToNextLevel(ZDDNode* node, State* state)
         for (uintx i = level_first_array_.back(); i < node_array_.size(); ++i) {
             global_hash_table_->Set(state->GetHashValue(node_array_[i]), i);
         }
+        state->ErasePrintedNodeNum();
         cerr << "The hash is expanded." << endl;
     }
     global_hash_table_->Set(state->GetHashValue(*node), node_array_.size() - 1);

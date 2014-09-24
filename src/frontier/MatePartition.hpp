@@ -43,17 +43,21 @@ protected:
     bool is_me_; // true なら component 数を component_limit_ 以上に制限
     // is_le_, is_me_ ともに false なら component 数を component_limit_ に制限
 
+    int max_vertex_weight_;
+
     ShortPair* num_to_pair_table_;
 
 public:
     StatePartition(Graph* graph, short component_limit, bool is_le, bool is_me)
         : StateFrontierAux<FrontierComp>(graph), component_limit_(component_limit),
-          is_le_(is_le), is_me_(is_me)
+          is_le_(is_le), is_me_(is_me), max_vertex_weight_(999999999)
     {
-        byte initial_conf[sizeof(int) + 2];
-        *reinterpret_cast<int*>(initial_conf) = 2;
+        const int size = sizeof(short) + sizeof(mate_t);
+        byte initial_conf[sizeof(int) + size];
+        *reinterpret_cast<int*>(initial_conf) = size;
         *reinterpret_cast<short*>(initial_conf + sizeof(int)) = 0;
-        StateFrontierAux<FrontierComp>::Initialize(initial_conf, 2);
+        *reinterpret_cast<mate_t*>(initial_conf + sizeof(int) + sizeof(short)) = 0;
+        StateFrontierAux<FrontierComp>::Initialize(initial_conf, size);
 
         int n = graph->GetNumberOfVertices();
 
@@ -119,6 +123,16 @@ public:
         return is_me_;
     }
 
+    int GetMaxVertexWeight() const
+    {
+        return max_vertex_weight_;
+    }
+
+    void SetMaxVertexWeight(int w)
+    {
+        max_vertex_weight_ = w;
+    }
+
     virtual int GetNextAuxSize();
     virtual void Load(Mate* mate, byte* data);
     virtual void Store(Mate* mate, byte* data);
@@ -132,19 +146,24 @@ public:
 // MatePartition
 class MatePartition : public MateFrontier<FrontierComp> {
 public:
-    short number_of_components_;
+    short number_of_components_; // number of fixed components
+    mate_t current_comp_num_; // number of current components
     ShortPair* pair_array_;
     int pair_count_;
 
     ShortPair* swap_pair_array_;
-    mate_t* calc_buff_;
-    mate_t* swap_frontier_array_;
+    //mate_t* calc_buff_;
+    //mate_t* swap_frontier_array_;
     short* sort_buff_;
+
+    int* comp_weight_array_;
+    int* swap_comp_weight_array_;
 
     CompManager<FrontierComp> comp_manager_;
 
 public:
-    MatePartition(State* state) : MateFrontier<FrontierComp>(state), number_of_components_(0), pair_count_(0),
+    MatePartition(State* state) : MateFrontier<FrontierComp>(state), number_of_components_(0),
+                                  current_comp_num_(0), pair_count_(0),
                                   comp_manager_(frontier_array, state->GetNumberOfVertices())
     {
         int n = state->GetNumberOfVertices();
@@ -152,6 +171,9 @@ public:
 
         swap_pair_array_ = new ShortPair[n * (n - 1) / 2];
         sort_buff_ = new short[n * (n - 1) / 2];
+
+        comp_weight_array_ = new int[2 * n + 1];
+        swap_comp_weight_array_ = new int[2 * n + 1];
     }
 
     virtual void UpdateMate(State* state, int child_num);
