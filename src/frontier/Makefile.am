@@ -27,7 +27,7 @@ MYHEADERSNEW = BigInteger.hpp Global.hpp Graph.hpp \
 	StateFrontierHyperAux.hpp \
     ZDDNode.hpp CompManager.hpp MateHyperReli.hpp
 
-bin_PROGRAMS = frontier enumpath
+bin_PROGRAMS = frontier enumpath readxdd
 frontier_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW) frontier.cpp
 enumpath_SOURCES = Graph.cpp BigInteger.cpp PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
     MateSTPath.cpp \
@@ -35,6 +35,9 @@ enumpath_SOURCES = Graph.cpp BigInteger.cpp PseudoZDD.cpp SolutionArray.cpp Stat
     MateSTPath.hpp ZDDNode.hpp PseudoZDD.hpp SolutionArray.hpp \
 	MateFGeneral.cpp \
     enumpath.cpp
+readxdd_SOURCES = BigInteger.cpp Graph.cpp HyperGraph.cpp \
+    PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
+	readxdd.cpp
 
 lib_LIBRARIES = libfrontier.a
 libfrontier_a_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW)
