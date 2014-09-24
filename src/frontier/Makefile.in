@@ -34,7 +34,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = frontier$(EXEEXT) enumpath$(EXEEXT)
+bin_PROGRAMS = frontier$(EXEEXT) enumpath$(EXEEXT) readxdd$(EXEEXT)
 @ENABLE_32BIT_TRUE@am__append_1 = -DBIT32
 @ENABLE_DEBUG_TRUE@am__append_2 = -g -DDEBUG
 @ENABLE_DEBUG_FALSE@am__append_3 = -O3
@@ -97,6 +97,12 @@ am_frontier_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	frontier.$(OBJEXT)
 frontier_OBJECTS = $(am_frontier_OBJECTS)
 frontier_LDADD = $(LDADD)
+am_readxdd_OBJECTS = BigInteger.$(OBJEXT) Graph.$(OBJEXT) \
+	HyperGraph.$(OBJEXT) PseudoZDD.$(OBJEXT) \
+	SolutionArray.$(OBJEXT) StateFrontier.$(OBJEXT) \
+	readxdd.$(OBJEXT)
+readxdd_OBJECTS = $(am_readxdd_OBJECTS)
+readxdd_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -111,9 +117,9 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libfrontier_a_SOURCES) $(enumpath_SOURCES) \
-	$(frontier_SOURCES)
+	$(frontier_SOURCES) $(readxdd_SOURCES)
 DIST_SOURCES = $(libfrontier_a_SOURCES) $(enumpath_SOURCES) \
-	$(frontier_SOURCES)
+	$(frontier_SOURCES) $(readxdd_SOURCES)
 HEADERS = $(include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -245,6 +251,10 @@ enumpath_SOURCES = Graph.cpp BigInteger.cpp PseudoZDD.cpp SolutionArray.cpp Stat
 	MateFGeneral.cpp \
     enumpath.cpp
 
+readxdd_SOURCES = BigInteger.cpp Graph.cpp HyperGraph.cpp \
+    PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
+	readxdd.cpp
+
 lib_LIBRARIES = libfrontier.a
 libfrontier_a_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW)
 include_HEADERS = $(MYHEADERSNEW)
@@ -364,6 +374,9 @@ enumpath$(EXEEXT): $(enumpath_OBJECTS) $(enumpath_DEPENDENCIES)
 frontier$(EXEEXT): $(frontier_OBJECTS) $(frontier_DEPENDENCIES) 
 	@rm -f frontier$(EXEEXT)
 	$(CXXLINK) $(frontier_OBJECTS) $(frontier_LDADD) $(LIBS)
+readxdd$(EXEEXT): $(readxdd_OBJECTS) $(readxdd_DEPENDENCIES) 
+	@rm -f readxdd$(EXEEXT)
+	$(CXXLINK) $(readxdd_OBJECTS) $(readxdd_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -385,6 +398,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateFrontier.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enumpath.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/frontier.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readxdd.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
