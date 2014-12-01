@@ -618,6 +618,13 @@ void PseudoZDD::ImportZDD(istream& ist, bool is_hex)
 
     level_first_array_.clear();
 
+    while (std::getline(ist, s)) { // skip until first '#'
+        if (s[0] == '#') {
+            level_first_array_.push_back(count);
+            break;
+        }
+    }
+
     while (std::getline(ist, s)) {
         if (s[0] == '#') {
             level_first_array_.push_back(count);
