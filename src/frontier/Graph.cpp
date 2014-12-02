@@ -84,26 +84,50 @@ void Graph::LoadIncidenceMatrix(istream&, bool is_simple, bool is_directed)
 
 void Graph::LoadEdgeList(istream& ist, bool is_simple, bool is_directed)
 {
+    int src, dest;
+    double weight;
+
+    number_of_vertices_ = -1;
+
     is_simple_ = is_simple;
     is_directed_ = is_directed;
 
     string s;
     std::getline(ist, s);
-    istringstream issx(s);
-    issx >> number_of_vertices_;
+    istringstream iss1(s);
+
+    iss1 >> src;
+
+    if (iss1 >> dest) { // The first line is an edge.
+        if (!(iss1 >> weight)) {
+            weight = 1.0;
+        }
+        edge_array_.push_back(Edge(src, dest, weight));
+    } else { // The first line is the number of vertices.
+        number_of_vertices_ = src;
+    }
 
     while (std::getline(ist, s)) {
-        istringstream iss(s);
-        int src, dest;
-        iss >> src >> dest;
+        istringstream iss2(s);
+        iss2 >> src >> dest;
 
-        double weight;
-        if (!(iss >> weight)) {
+        if (!(iss2 >> weight)) {
             weight = 1.0;
         }
         edge_array_.push_back(Edge(src, dest, weight));
     }
     number_of_edges_ = static_cast<int>(edge_array_.size());
+
+    if (number_of_vertices_ == -1) { // set the maximum vertex index to number_of_vertices_
+        for (uint i = 0; i < edge_array_.size(); ++i) {
+            if (edge_array_[i].src > number_of_vertices_) {
+                number_of_vertices_ = edge_array_[i].src;
+            }
+            if (edge_array_[i].dest > number_of_vertices_) {
+                number_of_vertices_ = edge_array_[i].dest;
+            }
+        }
+    }
 }
 
 void Graph::SetWeightToEach(istream& ist)
