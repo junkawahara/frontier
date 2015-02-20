@@ -52,11 +52,16 @@ public:
         : StateFrontierAux<FrontierComp>(graph), component_limit_(component_limit),
           is_le_(is_le), is_me_(is_me), max_vertex_weight_(999999999)
     {
-        const int size = sizeof(short) + sizeof(mate_t);
+        int size = sizeof(short);
+        if (graph_->IsUsingVertexWeight()) {
+            size += sizeof(mate_t);
+        }
         byte initial_conf[sizeof(int) + size];
         *reinterpret_cast<int*>(initial_conf) = size;
-        *reinterpret_cast<short*>(initial_conf + sizeof(int)) = 0;
-        *reinterpret_cast<mate_t*>(initial_conf + sizeof(int) + sizeof(short)) = 0;
+        *reinterpret_cast<short*>(initial_conf + sizeof(int)) = 0; // number_of_components_
+        if (graph_->IsUsingVertexWeight()) {
+            *reinterpret_cast<mate_t*>(initial_conf + sizeof(int) + sizeof(short)) = 0; // current_comp_num_
+        }
         StateFrontierAux<FrontierComp>::Initialize(initial_conf, size);
 
         int n = graph->GetNumberOfVertices();
