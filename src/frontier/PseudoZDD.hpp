@@ -170,6 +170,8 @@ public:
 
     void ImportZDD(std::istream& ist, bool is_hex);
 
+    void SwitchArcs();
+
 private:
     void OutputElementRecursively(intx id, std::vector<int>* vec, FILE* fp) const;
 
