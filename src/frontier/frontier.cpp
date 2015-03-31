@@ -135,6 +135,7 @@ int main(int argc, char** argv)
     bool is_ignore_isolated = false;
     bool is_print_parameter = false;
     bool is_reduce = false; // reduce the ZDD
+    bool is_switch = false; // switch arcs
     bool is_print_pzdd = true; // print the (pseudo) ZDD
     bool is_print_zdd_graphviz = false; // print the (pseudo) ZDD for graphviz
     bool is_print_zero = false; // print zero-terminal if true
@@ -366,6 +367,8 @@ int main(int argc, char** argv)
             }
         } else if (arg == "-r") {
             is_reduce = true;
+        } else if (arg == "--switch") {
+            is_switch = true;
         } else if (arg == "-n" || arg == "--no-print-zdd") {
             is_print_pzdd = false;
         } else if (arg == "--print-zdd-graphviz") {
@@ -736,6 +739,10 @@ int main(int argc, char** argv)
     state->FlushPrint();
 
     intx number_of_nodes = zdd->GetNumberOfNodes();
+
+    if (is_switch) {
+        zdd->SwitchArcs();
+    }
 
     if (is_reduce) {
         zdd->ReduceAsZDD(); // ZDDの既約化

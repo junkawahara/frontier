@@ -644,4 +644,11 @@ void PseudoZDD::ImportZDD(istream& ist, bool is_hex)
     level_first_array_.push_back(count);
 }
 
+void PseudoZDD::SwitchArcs()
+{
+    for (uintx i = 0; i < node_array_.size(); ++i) {
+        std::swap(node_array_[i].n.lo, node_array_[i].n.hi);
+    }
+}
+
 } // the end of the namespace
