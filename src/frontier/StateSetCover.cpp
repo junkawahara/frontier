@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSetCover.cpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,18 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#include "StateSetCover.hpp"
+
+namespace frontier_lib {
 
 using namespace std;
-using namespace frontier_lib;
 
+//*************************************************************************************************
+// StateSetCover
 
-int main(int argc, char** argv)
+int StateSetCover::CheckTerminalPre(MateSetCover* /*mate*/, int /*child_num*/)
 {
-    //mtrace(); // for debug
-
-    srand(static_cast<unsigned int>(time(NULL)));
-
-    OptionParser parser;
-
-    parser.ParseOption(argc, argv);
-
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
+    return -1;
 }
+
+} // the end of the namespace

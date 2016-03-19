@@ -22,10 +22,10 @@
 #include <cstdlib>
 #include <algorithm>
 
-#include "../frontier/Graph.hpp"
+#include "../frontier_lib/Graph.hpp"
 
 using namespace std;
-using namespace frontier_dd;
+using namespace frontier_lib;
 
 int main(int argc, char** argv)
 {
@@ -36,13 +36,13 @@ int main(int argc, char** argv)
 
     int start = atoi(argv[1]);
     int end = atoi(argv[2]);
-    double max_distance = (argc >= 4 ? atof(argv[3]) : -1);
+    int max_distance = (argc >= 4 ? atof(argv[3]) : -1);
 
     Graph graph;
     graph.LoadEdgeList(cin);
     graph.FloydWarshall();
 
-    const vector<vector<double> >& dist_matrix = graph.GetDistMatrix();
+    const vector<vector<int> >& dist_matrix = graph.GetDistMatrix();
 
     cerr << "start: " << start << ", end:" << end << endl;
     cerr << "min dist: " << dist_matrix[start][end] << endl;

@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSetPacking.cpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,25 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#include "StateSetPacking.hpp"
+
+namespace frontier_lib {
 
 using namespace std;
-using namespace frontier_lib;
 
+//*************************************************************************************************
+// StateSetPacking
 
-int main(int argc, char** argv)
+// mate update 後の終端判定。
+// 0終端なら 0, 1終端なら 1, どちらでもない場合は -1 を返す。
+int StateSetPacking::CheckTerminalPost(MateSetPacking* /*mate*/)
 {
-    //mtrace(); // for debug
-
-    srand(static_cast<unsigned int>(time(NULL)));
-
-    OptionParser parser;
-
-    parser.ParseOption(argc, argv);
-
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
+    if (IsLastEdge()) {
+        return 1;
+    } else {
+        return -1;
+    }
 }
+
+
+} // the end of the namespace

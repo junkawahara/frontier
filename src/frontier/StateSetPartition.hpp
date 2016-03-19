@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSetPartition.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,34 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef STATESETPARTITION_HPP
+#define STATESETPARTITION_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include <vector>
 
+#include "../frontier_lib/StateFrontierHyper.hpp"
+#include "../frontier_lib/PseudoZDD.hpp"
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+namespace frontier_lib {
 
-    srand(static_cast<unsigned int>(time(NULL)));
+//*************************************************************************************************
+// StateSetPartition: 集合分割のための State
+class StateSetPartition : public StateFrontierHyper<MateF<byte> > {
+protected:
+    typedef MateF<byte> MateSetPartition;
 
-    OptionParser parser;
+public:
+    StateSetPartition(HyperGraph* graph) : StateFrontierHyper<MateSetPartition>(graph) { }
+    virtual ~StateSetPartition() { }
 
-    parser.ParseOption(argc, argv);
+    virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num);
 
-    parser.PrepareGraph();
-    parser.MakeState();
+protected:
+    virtual void UpdateMate(MateSetPartition* mate, int child_num);
+    virtual int CheckTerminalPre(MateSetPartition* mate, int child_num);
+    virtual int CheckTerminalPost(MateSetPartition* mate);
+};
 
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
+} // the end of the namespace
 
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // STATESETPARTITION_HPP

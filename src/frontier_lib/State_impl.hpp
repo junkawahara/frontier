@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// State_impl.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,50 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef STATE_IMPL_HPP
+#define STATE_IMPL_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "PseudoZDD.hpp"
+#include "Mate.hpp"
 
+namespace frontier_lib {
 
-int main(int argc, char** argv)
+inline int State::DoSubsetting(int child_num, MateS* mate)
 {
-    //mtrace(); // for debug
+    assert(mate->sdd != 0);
 
-    srand(static_cast<unsigned int>(time(NULL)));
+    if (mate->sdd == 1) {
+        if (child_num == 1) { // zero suppressed rule
+            return 0;
+        } else {
+            return 1;
+        }
+    }
 
-    OptionParser parser;
+    int edge = current_edge_ + 1;
+    int level = subsetting_dd_->GetLevel(mate->sdd);
 
-    parser.ParseOption(argc, argv);
+    //std::cerr << "#" << level << ", " << edge << std::endl;
 
-    parser.PrepareGraph();
-    parser.MakeState();
+    assert(edge <= level);
 
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
+    intx c;
+    if (edge == level) {
+        c = subsetting_dd_->GetChildNodeId(mate->sdd, child_num);
+        if (c == 0) {
+            return 0;
+        }
+        mate->sdd = c;
+    } else { // edge < level
+        if (child_num == 1) { // zero suppressed rule
+            return 0;
+        }
+    }
 
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
+    return 1;
 }
+
+
+} // the end of the namespace
+
+#endif // STATE_IMPL_HPP

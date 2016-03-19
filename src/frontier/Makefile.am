@@ -1,48 +1,39 @@
-MYSOURCES = BigInteger.cpp Graph.cpp HyperGraph.cpp MateComponent.cpp \
-    MateKcut.cpp MateMTPath.cpp MatePathMatching.cpp MateRForest.cpp \
-    MateRcut.cpp MateSTPath.cpp MateSTPathDist.cpp MateSTree.cpp \
-    MateSetCover.cpp MateSetPacking.cpp MateSetPartition.cpp PseudoZDD.cpp \
-    SolutionArray.cpp StateFrontier.cpp StateFrontierHyper.cpp
+LIBDIR = ../frontier_lib/
 
-MYHEADERS = BigInteger.hpp Global.hpp Graph.hpp \
-    GraphInterface.hpp HyperGraph.hpp MateComponent.hpp \
-    MateForestBase.hpp MateKcut.hpp MateMTPath.hpp MatePathMatching.hpp \
-    MateRForest.hpp MateRcut.hpp MateSForest.hpp MateSTPath.hpp \
-    MateSTPathDist.hpp MateSTree.hpp MateSetCover.hpp MateSetPacking.hpp \
-    MateSetPartition.hpp Packer.hpp PseudoZDD.hpp RootManager.hpp SolutionArray.hpp \
-    State.hpp StateFrontier.hpp StateFrontierFixed.hpp StateFrontierHyper.hpp \
-    ZDDNode.hpp
+LIBHEADERS = $(LIBDIR)BigInteger.hpp $(LIBDIR)FrontierAlgorithm.hpp \
+    $(LIBDIR)FrontierComp.hpp $(LIBDIR)FrontierManager.hpp $(LIBDIR)Global.hpp \
+    $(LIBDIR)Graph.hpp $(LIBDIR)GraphInterface.hpp $(LIBDIR)HashTable.hpp \
+    $(LIBDIR)HyperGraph.hpp $(LIBDIR)Mate.hpp $(LIBDIR)MatePrinter.hpp \
+    $(LIBDIR)Packer.hpp $(LIBDIR)PseudoZDD.hpp \
+    $(LIBDIR)RBuffer.hpp $(LIBDIR)RootManager.hpp $(LIBDIR)SolutionArray.hpp \
+    $(LIBDIR)State.hpp $(LIBDIR)StateFrontier.hpp $(LIBDIR)StateFrontierComp.hpp \
+    $(LIBDIR)StateFrontierCompHyper.hpp $(LIBDIR)StateFrontierHyper.hpp \
+    $(LIBDIR)StateHyper.hpp $(LIBDIR)ZDDNode.hpp
 
-MYSOURCESNEW = BigInteger.cpp Graph.cpp HyperGraph.cpp MatePartition.cpp \
-    MateSTPath.cpp MateSTPathDist.cpp \
-    PseudoZDD.cpp MateFGeneral.cpp MateHyperSForest.cpp MateHyperReli.cpp \
-    SolutionArray.cpp StateFrontier.cpp
+MYSOURCES = StateCombination.cpp \
+    StateKcut.cpp StateMTPath.cpp \
+    StatePathMatching.cpp StateRcut.cpp StateRForest.cpp StateSetCover.cpp \
+    StateSetPacking.cpp StateSetPartition.cpp StateSForest.cpp StateSTPath.cpp \
+    StateSTPathDist.cpp StateSTree.cpp  
 
-MYHEADERSNEW = BigInteger.hpp Global.hpp Graph.hpp \
-    GraphInterface.hpp HyperGraph.hpp MatePartition.hpp \
-    MateSTPath.hpp \
-    MateSTPathDist.hpp MateFGeneral.hpp MateHyperSForest.hpp \
-    Packer.hpp PseudoZDD.hpp RootManager.hpp SolutionArray.hpp \
-    State.hpp StateFrontier.hpp StateFrontierAux.hpp StateFrontierHyper.hpp \
-	StateFrontierHyperAux.hpp \
-    ZDDNode.hpp CompManager.hpp MateHyperReli.hpp
+MYHEADERS = OptionParser.hpp \
+    StateKcut.hpp StateMTPath.hpp \
+    StatePathMatching.hpp StateRcut.hpp StateRForest.hpp StateSetCover.hpp \
+    StateSetPacking.hpp StateSetPartition.hpp StateSForest.hpp StateSTPath.hpp \
+    StateSTPathDist.hpp StateSTree.hpp $(LIBHEADERS)
 
-bin_PROGRAMS = frontier enumpath readxdd
-frontier_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW) frontier.cpp
-enumpath_SOURCES = Graph.cpp BigInteger.cpp PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
-    MateSTPath.cpp \
-    Global.hpp GraphInterface.hpp Graph.hpp State.hpp StateFrontier.hpp \
-    MateSTPath.hpp ZDDNode.hpp PseudoZDD.hpp SolutionArray.hpp \
-	MateFGeneral.cpp \
-    enumpath.cpp
-readxdd_SOURCES = BigInteger.cpp Graph.cpp HyperGraph.cpp \
-    PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
-	readxdd.cpp
+bin_PROGRAMS = frontier testfrontier 
+frontier_SOURCES = $(MYSOURCES) $(MYHEADERS) frontier.cpp
+testfrontier_SOURCES = $(MYSOURCES) $(MYHEADERS) testfrontier.cpp
+
+#readxdd_SOURCES = BigInteger.cpp Graph.cpp HyperGraph.cpp \
+#    PseudoZDD.cpp SolutionArray.cpp StateFrontier.cpp \
+#	readxdd.cpp
 
 lib_LIBRARIES = libfrontier.a
-libfrontier_a_SOURCES = $(MYSOURCESNEW) $(MYHEADERSNEW)
+libfrontier_a_SOURCES = $(MYSOURCES) $(MYHEADERS)
 
-include_HEADERS = $(MYHEADERSNEW)
+include_HEADERS = $(MYHEADERS)
 
 AUTOMAKE_OPTIONS = subdir-objects
 

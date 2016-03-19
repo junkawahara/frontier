@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// FrontierComp.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,23 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef FRONTIERCOMP_HPP
+#define FRONTIERCOMP_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "Global.hpp"
+
+namespace frontier_lib {
+
+struct FrontierComp {
+    mate_t comp;
+};
+
+struct MateConfVertexWeight {
+    int weight;
+    mate_t comp;
+};
 
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+} // the end of the namespace
 
-    srand(static_cast<unsigned int>(time(NULL)));
-
-    OptionParser parser;
-
-    parser.ParseOption(argc, argv);
-
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // FRONTIERCOMP_HPP

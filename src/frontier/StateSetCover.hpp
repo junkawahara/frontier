@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSetCover.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,28 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef STATESETCOVER_HPP
+#define STATESETCOVER_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "StateSetPartition.hpp"
+
+namespace frontier_lib {
+
+//*************************************************************************************************
+// StateSetCover: 集合被覆のための State
+class StateSetCover : public StateSetPartition {
+protected:
+    typedef MateF<byte> MateSetCover;
+
+public:
+    StateSetCover(HyperGraph* graph) : StateSetPartition(graph) { }
+    virtual ~StateSetCover() { }
+
+protected:
+    virtual int CheckTerminalPre(MateSetCover* mate, int child_num);
+};
 
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+} // the end of the namespace
 
-    srand(static_cast<unsigned int>(time(NULL)));
-
-    OptionParser parser;
-
-    parser.ParseOption(argc, argv);
-
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // STATESETCOVER_HPP

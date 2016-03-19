@@ -1,0 +1,14 @@
+*~
+*.o
+*.stackdump
+*.exe
+*.a
+Makefile
+config.h
+config.log
+config.status
+.deps/
+.dirstamp/
+stamp-h1
+autom4te.cache/
+.dirstamp

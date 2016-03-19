@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSForest.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,36 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef STATESFOREST_HPP
+#define STATESFOREST_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "../frontier_lib/StateFrontierComp.hpp"
+#include "../frontier_lib/MatePrinter.hpp"
 
+namespace frontier_lib {
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+//*************************************************************************************************
+// StateSForest: 全域木のための State
+class StateSForest : public StateFrontierComp<MateF<FrontierComp> > {
+protected:
+    typedef MateF<FrontierComp> MateSForest;
 
-    srand(static_cast<unsigned int>(time(NULL)));
+public:
+    StateSForest(Graph* graph) : StateFrontierComp<MateSForest>(graph) { }
+    virtual ~StateSForest() { }
 
-    OptionParser parser;
+    virtual std::string GetString(Mate* mate, bool next) const
+    {
+        return MatePrinter<FrontierComp>::GetStringComp("comp",
+            static_cast<MateSForest*>(mate)->frontier, frontier_manager_, next);
+    }
 
-    parser.ParseOption(argc, argv);
+protected:
+    virtual void UpdateMate(MateSForest* mate, int child_num);
+    virtual int CheckTerminalPre(MateSForest* mate, int child_num);
+    virtual int CheckTerminalPost(MateSForest* mate);
+};
 
-    parser.PrepareGraph();
-    parser.MakeState();
+} // the end of the namespace
 
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // STATESFOREST_HPP

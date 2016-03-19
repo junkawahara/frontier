@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSetPacking.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,28 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef STATESETPACKING_HPP
+#define STATESETPACKING_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "StateSetPartition.hpp"
+
+namespace frontier_lib {
+
+//*************************************************************************************************
+// StateSetPacking: 集合パッキングのための State
+class StateSetPacking : public StateSetPartition {
+protected:
+    typedef MateF<byte> MateSetPacking;
+
+public:
+    StateSetPacking(HyperGraph* graph) : StateSetPartition(graph) { }
+    virtual ~StateSetPacking() { }
+
+protected:
+    virtual int CheckTerminalPost(MateSetPacking* mate);
+};
 
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+} // the end of the namespace
 
-    srand(static_cast<unsigned int>(time(NULL)));
-
-    OptionParser parser;
-
-    parser.ParseOption(argc, argv);
-
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // STATESETPACKING_HPP

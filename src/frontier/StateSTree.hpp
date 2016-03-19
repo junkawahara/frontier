@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// StateSTree.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,27 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef STATESTREE_HPP
+#define STATESTREE_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "StateSForest.hpp"
 
+namespace frontier_lib {
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+//*************************************************************************************************
+// StateSTree: 全域木のための State
+class StateSTree : public StateSForest {
+protected:
+    typedef MateF<FrontierComp> MateSTree;
 
-    srand(static_cast<unsigned int>(time(NULL)));
+public:
+    StateSTree(Graph* graph) : StateSForest(graph) { }
+    virtual ~StateSTree() { }
 
-    OptionParser parser;
+protected:
+    virtual int CheckTerminalPost(MateSTree* mate);
+};
 
-    parser.ParseOption(argc, argv);
+} // the end of the namespace
 
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // STATESTREE_HPP

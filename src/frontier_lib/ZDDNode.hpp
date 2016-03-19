@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// ZDDNode.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,32 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef ZDDNODE_HPP
+#define ZDDNODE_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include "Global.hpp"
 
+namespace frontier_lib {
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+//*************************************************************************************************
+// ZDDNode: ZDDのノードを表す共用体
+// 共用体にしている理由はメモリ使用量効率化のため
+union ZDDNode {
+public:
+    struct {
+        //intx dummy1;
+        //intx dummy2;
+        intx pos_sdd;
+        intx pos_fixed;
+        intx pos_frontier;
+        intx pos_v;
+    } p;
+    struct {
+        intx lo;
+        intx hi;
+    } n;
+};
 
-    srand(static_cast<unsigned int>(time(NULL)));
+} // the end of the namespace
 
-    OptionParser parser;
-
-    parser.ParseOption(argc, argv);
-
-    parser.PrepareGraph();
-    parser.MakeState();
-
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
-
-    parser.Output(zdd);
-
-    delete zdd;
-
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // ZDDNODE_HPP

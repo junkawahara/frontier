@@ -1,5 +1,5 @@
 //
-// frontier.cpp
+// RootManager.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,32 +18,59 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "OptionParser.hpp"
+#ifndef ROOTMANAGER_HPP
+#define ROOTMANAGER_HPP
 
-using namespace std;
-using namespace frontier_lib;
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <string>
 
+namespace frontier_lib {
 
-int main(int argc, char** argv)
-{
-    //mtrace(); // for debug
+//*************************************************************************************************
+// RootManager: 根を管理するクラス
 
-    srand(static_cast<unsigned int>(time(NULL)));
+class RootManager {
+private:
+    std::vector<int> source_array_;
+public:
+    void Add(int v)
+    {
+        source_array_.push_back(v);
+    }
 
-    OptionParser parser;
+    int Get(int index) const
+    {
+        return source_array_[index];
+    }
 
-    parser.ParseOption(argc, argv);
+    int GetSize() const
+    {
+        return static_cast<int>(source_array_.size());
+    }
 
-    parser.PrepareGraph();
-    parser.MakeState();
+    bool Exists(int v) const
+    {
+        return std::find(source_array_.begin(), source_array_.end(), v) != source_array_.end();
+    }
 
-    PseudoZDD* zdd = FrontierAlgorithm::Construct(parser.state); // アルゴリズム開始
+    void Parse(std::string filename)
+    {
+        std::ifstream ifs(filename.c_str());
+        Parse(ifs);
+    }
 
-    parser.Output(zdd);
+    void Parse(std::istream& ifs)
+    {
+        int c;
+        while (ifs >> c) {
+            source_array_.push_back(c);
+        }
+    }
+};
 
-    delete zdd;
+} // the end of the namespace
 
-    //muntrace(); // for debug
-
-    return 0;
-}
+#endif // ROOTMANAGER_HPP

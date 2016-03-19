@@ -1,7 +1,7 @@
 \documentclass{jsarticle}
 \usepackage[dvipdfmx]{graphicx}
 
-\title{フロンティア法プログラム}
+\title{フロンティア法プログラム version 1.0.0}
 
 \begin{document}
 
@@ -255,7 +255,18 @@ $e_4 = \{2, 4\}$, $e_5 = \{2, 5\}$, $e_6 = \{3, 4\}$, $e_7 = \{4, 5\}$ となる
 
 \subsection{ハイパーグラフの入力書式}
 
-入力がハイパーグラフの場合、... （未稿）
+辺リスト形式でハイパーグラフを表現する。それ以外の形式は現在のところ
+対応していない。\texttt{-c} オプションを用いる。
+
+\begin{verbatim}
+4
+1 2 3
+2
+2 4
+\end{verbatim}
+
+1行目は頂点の数を表す。2行目以降は1つの行が1つのハイパー辺を表す。
+ハイパー辺が含む頂点の番号を空白区切りで並べる。
 
 \subsection{入力グラフの確認}
 
@@ -517,5 +528,11 @@ BigIntegerが使用される。
 \end{tabular}
 \end{center}
 \end{table}
+
+\section{更新履歴}
+
+\begin{itemize}
+\item ver 1.0.0 2016/3/19 新版公開
+\end{itemize}
 
 \end{document}
