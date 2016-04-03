@@ -1,5 +1,5 @@
 //
-// MateCombination.hpp
+// StateCombination.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,8 +18,8 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef MATESTATECOMBINATION_HPP
-#define MATESTATECOMBINATION_HPP
+#ifndef STATECOMBINATION_HPP
+#define STATECOMBINATION_HPP
 
 #include <string>
 #include <iostream>
@@ -75,4 +75,4 @@ protected:
 
 } // the end of the namespace
 
-#endif // MATESTATECOMBINATION_HPP
+#endif // STATECOMBINATION_HPP

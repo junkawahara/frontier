@@ -1,5 +1,5 @@
 //
-// MateCombination.cpp
+// StateCombination.cpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
