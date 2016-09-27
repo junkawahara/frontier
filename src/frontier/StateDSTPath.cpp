@@ -1,5 +1,5 @@
 //
-// MateSTPath.cpp
+// MateDSTPath.cpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -21,23 +21,22 @@
 #include <cstring>
 #include <cassert>
 
-#include "StateSTPath.hpp"
+#include "StateDSTPath.hpp"
 
 namespace frontier_lib {
 
 using namespace std;
 
 //*************************************************************************************************
-// StateSTPath
+// StateDSTPath
 
-void StateSTPath::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
+void StateDSTPath::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
 {
-    StateFrontier<MateSTPath>::UnpackMate(node, mate, child_num);
+    StateSTPath::UnpackMate(node, mate, child_num);
 
     MateSTPath* m = static_cast<MateSTPath*>(mate);
 
     if (child_num == 0) { // Hi枝の場合は既にunpackされているので、無視する
-
         if (IsCycle()) { // サイクルの場合
             for (int i = 0; i < frontier_manager_.GetEnteringFrontierSize(); ++i) {
                 int v = frontier_manager_.GetEnteringFrontierValue(i);
@@ -55,17 +54,17 @@ void StateSTPath::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
                 int v = frontier_manager_.GetEnteringFrontierValue(i);
                 m->frontier[v] = v;
                 if (v == start_vertex_) {
-                    m->frontier[v] = end_vertex_;
+                    m->frontier[v] = -end_vertex_;
                     for (int j = 0; j < frontier_manager_.GetPreviousFrontierSize(); ++j) {
                         if (m->frontier[frontier_manager_.GetPreviousFrontierValue(j)] == start_vertex_) {
-                            m->frontier[v] = frontier_manager_.GetPreviousFrontierValue(j);
+                            m->frontier[v] = -frontier_manager_.GetPreviousFrontierValue(j);
                             break;
                         }
                     }
                 } else if (v == end_vertex_) {
                     m->frontier[v] = start_vertex_;
                     for (int j = 0; j < frontier_manager_.GetPreviousFrontierSize(); ++j) {
-                        if (m->frontier[frontier_manager_.GetPreviousFrontierValue(j)] == end_vertex_) {
+                        if (m->frontier[frontier_manager_.GetPreviousFrontierValue(j)] == -end_vertex_) {
                             m->frontier[v] = frontier_manager_.GetPreviousFrontierValue(j);
                             break;
                         }
@@ -76,7 +75,7 @@ void StateSTPath::UnpackMate(ZDDNode* node, Mate* mate, int child_num)
     }
 }
 
-void StateSTPath::UpdateMate(MateSTPath* mate, int child_num)
+void StateDSTPath::UpdateMate(MateDSTPath* mate, int child_num)
 {
     Edge edge = GetCurrentEdge();
 
@@ -84,18 +83,22 @@ void StateSTPath::UpdateMate(MateSTPath* mate, int child_num)
         int sm = mate->frontier[edge.src];
         int dm = mate->frontier[edge.dest];
 
+        if (sm == edge.src) { // 始点が孤立点
+            sm = -edge.src;
+        }
+
         // 辺をつないだときの mate の更新
         // （↓の計算順を変更すると正しく動作しないことに注意）
         mate->frontier[edge.src] = 0;
         mate->frontier[edge.dest] = 0;
-        mate->frontier[sm] = dm;
+        mate->frontier[-sm] = dm;
         mate->frontier[dm] = sm;
     }
 }
 
 // mate update 前の終端判定。
 // 0終端なら 0, 1終端なら 1, どちらでもない場合は -1 を返す。
-int StateSTPath::CheckTerminalPre(MateSTPath* mate, int child_num)
+int StateDSTPath::CheckTerminalPre(MateDSTPath* mate, int child_num)
 {
     if (child_num == 0) { // Lo枝のとき
         return -1;
@@ -105,7 +108,11 @@ int StateSTPath::CheckTerminalPre(MateSTPath* mate, int child_num)
         if (mate->frontier[edge.src] == 0 || mate->frontier[edge.dest] == 0) {
             // 分岐が発生
             return 0;
-        } else if (mate->frontier[edge.src] == edge.dest) {
+        } else if (mate->frontier[edge.src] != edge.src && mate->frontier[edge.src] > 0) { // 始点から2本以上枝が出て行く
+            return 0;
+        } else if (mate->frontier[edge.dest] < 0) { // 終点から2本以上枝が入ってくる
+            return 0;
+        } else if (mate->frontier[edge.src] == -edge.dest) {
             // サイクルが完成
 
             if (!STEnteringFrontier()) { // s or t がまだフロンティアに入っていない
@@ -113,7 +120,6 @@ int StateSTPath::CheckTerminalPre(MateSTPath* mate, int child_num)
             }
 
             // フロンティアに属する残りの頂点についてチェック
-
             for (int i = 0; i < frontier_manager_.GetNextFrontierSize(); ++i) {
                 mate_t v = frontier_manager_.GetNextFrontierValue(i);
                 // 張った辺の始点と終点、及びs,tはチェックから除外
@@ -145,7 +151,7 @@ int StateSTPath::CheckTerminalPre(MateSTPath* mate, int child_num)
 
 // mate update 後の終端判定。
 // 0終端なら 0, 1終端なら 1, どちらでもない場合は -1 を返す。
-int StateSTPath::CheckTerminalPost(MateSTPath* mate)
+int StateDSTPath::CheckTerminalPost(MateDSTPath* mate)
 {
     for (int i = 0; i < frontier_manager_.GetLeavingFrontierSize(); ++i) {
         mate_t v = frontier_manager_.GetLeavingFrontierValue(i); // フロンティアから抜ける頂点 v

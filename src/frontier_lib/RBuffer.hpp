@@ -42,7 +42,7 @@ template <typename T>
 class RBuffer {
 private:
     std::vector<T*> buffer_array_;
-    std::vector<intx> tail_pos_array_;
+    //std::vector<intx> tail_pos_array_;
     int deleted_index_;
     intx head_;
     intx tail_;
@@ -53,7 +53,7 @@ public:
     RBuffer() : deleted_index_(0), head_(0), tail_(0)
     {
         buffer_array_.push_back(new T[BLOCK_SIZE_]);
-        tail_pos_array_.push_back(-1);
+        //tail_pos_array_.push_back(-1);
     }
 
     ~RBuffer()
@@ -73,27 +73,58 @@ public:
         return head_;
     }
 
-    T* GetPointer(intx index)
+    //intx GetTailIndex() const
+    //{
+    //    return tail_;
+    //}
+
+    T GetValue(intx index) const
     {
-        return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
+        return buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
     }
 
-    const T* GetPointer(intx index) const
+    // return the (tail + offset)-th value
+    T GetValueFromTail(uintx offset = 0) const
     {
-        return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
+        return buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
     }
 
-    T* GetReadPointer(uintx offset)
+    // return the (head - offset)-th value
+    T Peek(uintx offset = 0) const
     {
-        return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
+        return buffer_array_[(head_ - 1 - offset) / BLOCK_SIZE_][(head_ - 1 - offset) % BLOCK_SIZE_];
     }
 
-    const T* GetReadPointer(uintx offset) const
+    //T* GetPointer(intx index)
+    //{
+    //    return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
+    //}
+
+    //const T* GetPointer(intx index) const
+    //{
+    //    return &buffer_array_[index / BLOCK_SIZE_][index % BLOCK_SIZE_];
+    //}
+
+    //T* GetReadPointer(uintx offset)
+    //{
+    //    return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
+    //}
+
+    //const T* GetReadPointer(uintx offset) const
+    //{
+    //    return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
+    //}
+
+    void WriteAndSeekHead(T value)
     {
-        return &buffer_array_[(tail_ + offset) / BLOCK_SIZE_][(tail_ + offset) % BLOCK_SIZE_];
+        while (static_cast<int>(buffer_array_.size()) <= head_ / BLOCK_SIZE_) {
+            buffer_array_.push_back(new T[BLOCK_SIZE_]);
+        }
+        buffer_array_[head_ / BLOCK_SIZE_][head_ % BLOCK_SIZE_] = value;
+        ++head_;
     }
 
-    T* GetWritePointerAndSeekHead(intx seek_size)
+    /*T* GetWritePointerAndSeekHead(intx seek_size)
     {
         assert(seek_size < BLOCK_SIZE_);
 
@@ -116,7 +147,7 @@ public:
             return &buffer_array_[(head_ - seek_size) / BLOCK_SIZE_][(head_ - seek_size)
                 % BLOCK_SIZE_];
         }
-    }
+        }*/
 
     void BackHead(intx offset)
     {
@@ -130,14 +161,21 @@ public:
 
         tail_ += offset;
 
-        if (tail_pos_array_[tail_ / BLOCK_SIZE_] == tail_ % BLOCK_SIZE_) {
+        for (; deleted_index_ < tail_ / BLOCK_SIZE_; ++deleted_index_) {
+            buffer_array_.push_back(buffer_array_[deleted_index_]);
+            buffer_array_[deleted_index_] = NULL;
+        }
+
+        /*if (tail_pos_array_[tail_ / BLOCK_SIZE_] == tail_ % BLOCK_SIZE_) {
             for (; deleted_index_ < tail_ / BLOCK_SIZE_ + 1; ++deleted_index_) {
                 buffer_array_.push_back(buffer_array_[deleted_index_]);
                 buffer_array_[deleted_index_] = NULL;
             }
             tail_ = (tail_ / BLOCK_SIZE_ + 1) * BLOCK_SIZE_;
-        }
+            }*/
     }
+
+    
 };
 
 //*************************************************************************************************

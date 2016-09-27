@@ -32,9 +32,10 @@ protected:
     const bool is_hyper_;
     int number_of_vertices_;
     int number_of_edges_;
+    bool is_use_vertex_weight_;
 
 public:
-    GraphInterface(bool is_hyper) : is_hyper_(is_hyper), number_of_vertices_(0), number_of_edges_(0) { }
+    GraphInterface(bool is_hyper) : is_hyper_(is_hyper), number_of_vertices_(0), number_of_edges_(0), is_use_vertex_weight_(false) { }
 
     virtual ~GraphInterface() { }
 

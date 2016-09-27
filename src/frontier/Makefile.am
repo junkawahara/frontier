@@ -4,19 +4,21 @@ LIBHEADERS = $(LIBDIR)BigInteger.hpp $(LIBDIR)FrontierAlgorithm.hpp \
     $(LIBDIR)FrontierComp.hpp $(LIBDIR)FrontierManager.hpp $(LIBDIR)Global.hpp \
     $(LIBDIR)Graph.hpp $(LIBDIR)GraphInterface.hpp $(LIBDIR)HashTable.hpp \
     $(LIBDIR)HyperGraph.hpp $(LIBDIR)Mate.hpp $(LIBDIR)MatePrinter.hpp \
-    $(LIBDIR)Packer.hpp $(LIBDIR)PseudoZDD.hpp \
+    $(LIBDIR)PseudoZDD.hpp \
     $(LIBDIR)RBuffer.hpp $(LIBDIR)RootManager.hpp $(LIBDIR)SolutionArray.hpp \
     $(LIBDIR)State.hpp $(LIBDIR)StateFrontier.hpp $(LIBDIR)StateFrontierComp.hpp \
     $(LIBDIR)StateFrontierCompHyper.hpp $(LIBDIR)StateFrontierHyper.hpp \
     $(LIBDIR)StateHyper.hpp $(LIBDIR)ZDDNode.hpp
 
 MYSOURCES = StateCombination.cpp \
+    StateDSTPath.cpp \
     StateKcut.cpp StateMTPath.cpp \
     StatePathMatching.cpp StateRcut.cpp StateRForest.cpp StateSetCover.cpp \
     StateSetPacking.cpp StateSetPartition.cpp StateSForest.cpp StateSTPath.cpp \
     StateSTPathDist.cpp StateSTree.cpp  
 
 MYHEADERS = OptionParser.hpp \
+    StateDSTPath.hpp \
     StateKcut.hpp StateMTPath.hpp \
     StatePathMatching.hpp StateRcut.hpp StateRForest.hpp StateSetCover.hpp \
     StateSetPacking.hpp StateSetPartition.hpp StateSForest.hpp StateSTPath.hpp \

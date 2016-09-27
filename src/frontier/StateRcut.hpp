@@ -44,6 +44,11 @@ struct MateConfRcut {
     }
 };
 
+inline bool operator==(const MateConfRcut& m1, const MateConfRcut& m2) {
+    return m1.cut_weight == m2.cut_weight;
+}
+
+
 //*************************************************************************************************
 // StateRcut: 根を指定したカットのための State
 class StateRcut : public StateFrontierComp<MateFD<FrontierComp, MateConfRcut> > {
@@ -77,7 +82,7 @@ public:
         MateRcut* mate = static_cast<MateRcut*>(StateFrontier<MateRcut>::Initialize(root_node));
         MateConfRcut conf;
         conf.cut_weight = 0;
-        mate->Initialize(root_node, &conf);
+        mate->Initialize(root_node, conf);
         return mate;
     }
 

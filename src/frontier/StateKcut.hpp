@@ -42,6 +42,11 @@ struct MateConfKcut {
     }
 };
 
+inline bool operator==(const MateConfKcut& m1, const MateConfKcut& m2) {
+    return m1.number_of_components == m2.number_of_components
+        && m1.cut_weight == m2.cut_weight;
+}
+
 //*************************************************************************************************
 // StateKcut: 高々 k 本の辺からなるカットのための State
 class StateKcut : public StateFrontierComp<MateFD<FrontierComp, MateConfKcut> > {
@@ -73,7 +78,7 @@ public:
         MateConfKcut conf;
         conf.number_of_components = 0;
         conf.cut_weight = 0;
-        mate->Initialize(root_node, &conf);
+        mate->Initialize(root_node, conf);
         return mate;
     }
 

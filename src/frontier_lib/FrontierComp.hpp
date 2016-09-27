@@ -29,11 +29,45 @@ struct FrontierComp {
     mate_t comp;
 };
 
+inline bool operator==(const FrontierComp& f1, const FrontierComp& f2)
+{
+    return f1.comp == f2.comp;
+}
+
+inline bool operator!=(const FrontierComp& f1, const FrontierComp& f2)
+{
+    return f1.comp != f2.comp;
+}
+
 struct MateConfVertexWeight {
     int weight;
     mate_t comp;
 };
 
+inline bool operator==(const MateConfVertexWeight& f1, const MateConfVertexWeight& f2)
+{
+    return f1.weight == f2.weight && f1.comp == f2.comp;
+}
+
+inline bool operator!=(const MateConfVertexWeight& f1, const MateConfVertexWeight& f2)
+{
+    return !(f1 == f2);
+}
+
+struct MateConfSingleCComponent {
+    mate_t comp;
+    byte touched; // 1 if the vertex is touched; 0 if not
+};
+
+inline bool operator==(const MateConfSingleCComponent& f1, const MateConfSingleCComponent& f2)
+{
+    return f1.comp == f2.comp && f1.touched == f2.touched;
+}
+
+inline bool operator!=(const MateConfSingleCComponent& f1, const MateConfSingleCComponent& f2)
+{
+    return !(f1 == f2);
+}
 
 } // the end of the namespace
 

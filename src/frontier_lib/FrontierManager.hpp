@@ -53,9 +53,9 @@ private:
     const GraphInterface* const igraph_;
 
 public:
-    FrontierManager(Graph* graph) : graph_(graph), hgraph_(NULL), igraph_(graph) { }
+    FrontierManager(const Graph* graph) : graph_(graph), hgraph_(NULL), igraph_(graph) { }
 
-    FrontierManager(HyperGraph* hgraph) : graph_(NULL), hgraph_(hgraph), igraph_(hgraph) { }
+    FrontierManager(const HyperGraph* hgraph) : graph_(NULL), hgraph_(hgraph), igraph_(hgraph) { }
 
     void PrintFrontier(std::ostream& ost) const
     {

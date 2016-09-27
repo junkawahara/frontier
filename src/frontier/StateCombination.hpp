@@ -62,7 +62,7 @@ public:
         MateCombination* mate = static_cast<MateCombination*>(
                    StateFrontier<MateCombination>::Initialize(root_node));
         mate_t initial_value = 0;
-        mate->Initialize(root_node, &initial_value);
+        mate->Initialize(root_node, initial_value);
         return mate;
     }
 

@@ -35,7 +35,7 @@
 #include "RBuffer.hpp"
 #include "FrontierManager.hpp"
 #include "FrontierComp.hpp"
-#include "Packer.hpp"
+//#include "Packer.hpp"
 
 namespace frontier_lib {
 
@@ -98,6 +98,13 @@ public:
         return MatePrinter<FrontierWeightPrinter<T> >::GetString(val_name, fwp, frontier_manager, next);
     }
 
+    static std::string GetStringTouched(const std::string& val_name,
+                                               T* frontier, const FrontierManager& frontier_manager, bool next)
+    {
+        FrontierTouchedPrinter<T> fwp(frontier);
+        return MatePrinter<FrontierTouchedPrinter<T> >::GetString(val_name, fwp, frontier_manager, next);
+    }
+
     template <typename M>
     class FrontierPointerPrinter {
     private:
@@ -140,6 +147,21 @@ public:
 
         mate_t operator()(mate_t v) const {
             return frontier[v].weight;
+        }
+    };
+
+    template <typename M>
+    class FrontierTouchedPrinter {
+    private:
+        M* frontier;
+
+    public:
+        FrontierTouchedPrinter(M* f) {
+            frontier = f;
+        }
+
+        byte operator()(mate_t v) const {
+            return frontier[v].touched;
         }
     };
 };

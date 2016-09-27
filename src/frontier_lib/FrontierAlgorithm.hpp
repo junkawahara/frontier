@@ -48,9 +48,12 @@ private:
     static const intx INITIAL_HASH_SIZE_ = (1ll << 26);
 
 public:
-    static PseudoZDD* Construct(State* state)
+    static PseudoZDD* Construct(State* state, std::string filename = "")
     {
         PseudoZDD* zdd = new PseudoZDD();
+        if (!filename.empty()) {
+            zdd->SetHddMode(filename);
+        }
         ZDDNode* root_node = zdd->CreateRootNode(); // 根ノードの作成
 
         HashTable global_hash_table(INITIAL_HASH_SIZE_); // ノード検索用ハッシュ
@@ -70,6 +73,7 @@ public:
 
             // 次のレベルのノードがどこから始まるかを記録
             zdd->SetLevelStart();
+            mate->SetOffset();
 
             // 現在のレベルの各ノードに対するループ
             for (intx i = 0; i < zdd->GetCurrentLevelSize(); ++i) {
@@ -82,7 +86,7 @@ public:
                     state->UnpackMate(node, mate, child_num);
 
                     if (state->IsPrintProgress() && child_num == 0) {
-                        DebugPrintf("node id = " PERCENT_D "\n", zdd->GetId(node));
+                        DebugPrintf("node id = " PERCENT_D "\n", node->node_number);
                         DebugPrintf("%s\n", state->GetString(mate, false).c_str());
                     }
 
@@ -90,7 +94,7 @@ public:
                     ZDDNode* child_node = state->MakeNewNode(node, mate, child_num, zdd);
 
                     // 終端でないかどうかチェック
-                    if (child_node != zdd->GetZeroTerminal() && child_node != zdd->GetOneTerminal()) {
+                    if (child_node != zdd->ZeroTerminal && child_node != zdd->OneTerminal) {
 
                         state->PackMate(child_node, mate);
 
@@ -112,7 +116,7 @@ public:
                     zdd->SetChildNode(node, child_node, child_num);
 
                     if (state->IsPrintProgress()) {
-                        DebugPrintf("\t%d-child: id = " PERCENT_D ": ", child_num, zdd->GetId(child_node));
+                        DebugPrintf("\t%d-child: id = " PERCENT_D ": ", child_num, child_node->node_number);
                         DebugPrintf("%s\n", state->GetString(mate, true).c_str());
                     }
                 }
@@ -125,6 +129,7 @@ public:
         zdd->SetLevelStart();
         delete mate;
         zdd->SetHashTable(NULL);
+        zdd->HddTerminate();
         return zdd;
     }
 };

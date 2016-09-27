@@ -54,7 +54,7 @@
 #include "StateSTPathDist.hpp"
 #include "StatePathMatching.hpp"
 #include "StateMTPath.hpp"
-//#include "StateDSTPath.hpp"
+#include "StateDSTPath.hpp"
 //#include "StateSTEDPath.hpp"
 #include "StateKcut.hpp"
 #include "StateRcut.hpp"
@@ -666,16 +666,16 @@ public:
         bool is_directed = (enum_kind == DSTPATH);
         switch (loading_kind) {
         case ADJ_LIST:
-            igraph->LoadAdjacencyList(*input_is, is_directed);
+            igraph->LoadAdjacencyList(*input_is, false, is_directed);
             break;
         case ADJ_MATRIX:
-            igraph->LoadAdjacencyMatrix(*input_is, is_directed);
+            igraph->LoadAdjacencyMatrix(*input_is, false, is_directed);
             break;
         case INC_MATRIX:
-            igraph->LoadIncidenceMatrix(*input_is, is_directed);
+            igraph->LoadIncidenceMatrix(*input_is, false, is_directed);
             break;
         case EDGE_LIST:
-            igraph->LoadEdgeList(*input_is, is_directed);
+            igraph->LoadEdgeList(*input_is, false, is_directed);
             break;
         }
 
@@ -812,9 +812,7 @@ public:
                     state = new StateSTPath(graph);
                 }
             } else {
-                std::cerr << "not implemented yet." << std::endl;
-                exit(1);
-                //state = new StateDSTPath(graph);
+                state = new StateDSTPath(graph);
             }
             if (is_use_elimit) {
                 static_cast<StateSTPathDist*>(state)->SetStartAndEndVertex(start_vertex, end_vertex);

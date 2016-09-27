@@ -104,24 +104,24 @@ public:
 
         if (m->IsUseSubsetting()) {
             if (DoSubsetting(child_num, m) == 0) {
-                return zdd->GetZeroTerminal();
+                return zdd->ZeroTerminal;
             }
         }
 
         int c = this->CheckTerminalPre(m, child_num); // 終端に遷移するか事前にチェック
         if (c == 0) { // 0終端に行くとき
-            return zdd->GetZeroTerminal(); // 0終端を返す
+            return zdd->ZeroTerminal; // 0終端を返す
         } else if (c == 1) { // 1終端に行くとき
-            return zdd->GetOneTerminal(); // 1終端を返す
+            return zdd->OneTerminal; // 1終端を返す
         }
 
         this->UpdateMate(m, child_num); // mate を更新する
 
         c = this->CheckTerminalPost(m); // 終端に遷移するか再度チェック
         if (c == 0) { // 0終端に行くとき
-            return zdd->GetZeroTerminal(); // 0終端を返す
+            return zdd->ZeroTerminal; // 0終端を返す
         } else if (c == 1) { // 1終端に行くとき
-            return zdd->GetOneTerminal(); // 1終端を返す
+            return zdd->OneTerminal; // 1終端を返す
         } else {
             ZDDNode* child_node = zdd->CreateNode();
             return child_node;

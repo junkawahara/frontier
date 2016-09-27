@@ -100,13 +100,13 @@ AR = ar
 ARFLAGS = cru
 libfrontier_a_AR = $(AR) $(ARFLAGS)
 libfrontier_a_LIBADD =
-am__objects_1 = StateCombination.$(OBJEXT) StateKcut.$(OBJEXT) \
-	StateMTPath.$(OBJEXT) StatePathMatching.$(OBJEXT) \
-	StateRcut.$(OBJEXT) StateRForest.$(OBJEXT) \
-	StateSetCover.$(OBJEXT) StateSetPacking.$(OBJEXT) \
-	StateSetPartition.$(OBJEXT) StateSForest.$(OBJEXT) \
-	StateSTPath.$(OBJEXT) StateSTPathDist.$(OBJEXT) \
-	StateSTree.$(OBJEXT)
+am__objects_1 = StateCombination.$(OBJEXT) StateDSTPath.$(OBJEXT) \
+	StateKcut.$(OBJEXT) StateMTPath.$(OBJEXT) \
+	StatePathMatching.$(OBJEXT) StateRcut.$(OBJEXT) \
+	StateRForest.$(OBJEXT) StateSetCover.$(OBJEXT) \
+	StateSetPacking.$(OBJEXT) StateSetPartition.$(OBJEXT) \
+	StateSForest.$(OBJEXT) StateSTPath.$(OBJEXT) \
+	StateSTPathDist.$(OBJEXT) StateSTree.$(OBJEXT)
 am__objects_2 =
 am__objects_3 = $(am__objects_2)
 am_libfrontier_a_OBJECTS = $(am__objects_1) $(am__objects_3)
@@ -242,19 +242,21 @@ LIBHEADERS = $(LIBDIR)BigInteger.hpp $(LIBDIR)FrontierAlgorithm.hpp \
     $(LIBDIR)FrontierComp.hpp $(LIBDIR)FrontierManager.hpp $(LIBDIR)Global.hpp \
     $(LIBDIR)Graph.hpp $(LIBDIR)GraphInterface.hpp $(LIBDIR)HashTable.hpp \
     $(LIBDIR)HyperGraph.hpp $(LIBDIR)Mate.hpp $(LIBDIR)MatePrinter.hpp \
-    $(LIBDIR)Packer.hpp $(LIBDIR)PseudoZDD.hpp \
+    $(LIBDIR)PseudoZDD.hpp \
     $(LIBDIR)RBuffer.hpp $(LIBDIR)RootManager.hpp $(LIBDIR)SolutionArray.hpp \
     $(LIBDIR)State.hpp $(LIBDIR)StateFrontier.hpp $(LIBDIR)StateFrontierComp.hpp \
     $(LIBDIR)StateFrontierCompHyper.hpp $(LIBDIR)StateFrontierHyper.hpp \
     $(LIBDIR)StateHyper.hpp $(LIBDIR)ZDDNode.hpp
 
 MYSOURCES = StateCombination.cpp \
+    StateDSTPath.cpp \
     StateKcut.cpp StateMTPath.cpp \
     StatePathMatching.cpp StateRcut.cpp StateRForest.cpp StateSetCover.cpp \
     StateSetPacking.cpp StateSetPartition.cpp StateSForest.cpp StateSTPath.cpp \
     StateSTPathDist.cpp StateSTree.cpp  
 
 MYHEADERS = OptionParser.hpp \
+    StateDSTPath.hpp \
     StateKcut.hpp StateMTPath.hpp \
     StatePathMatching.hpp StateRcut.hpp StateRForest.hpp StateSetCover.hpp \
     StateSetPacking.hpp StateSetPartition.hpp StateSForest.hpp StateSTPath.hpp \
@@ -395,6 +397,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateCombination.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateDSTPath.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateKcut.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateMTPath.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StatePathMatching.Po@am__quote@

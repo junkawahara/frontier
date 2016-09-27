@@ -1,5 +1,5 @@
 //
-// ZDDNode.hpp
+// MateDSTPath.hpp
 //
 // Copyright (c) 2012 -- 2016 Jun Kawahara
 //
@@ -18,39 +18,43 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef ZDDNODE_HPP
-#define ZDDNODE_HPP
+#ifndef MATEDSTPATH_HPP
+#define MATEDSTPATH_HPP
 
-#include "Global.hpp"
+#include "../frontier_lib/StateFrontier.hpp"
+#include "../frontier_lib/PseudoZDD.hpp"
+#include "../frontier_lib/MatePrinter.hpp"
+#include "StateSTPath.hpp"
 
 namespace frontier_lib {
 
 //*************************************************************************************************
-// ZDDNode: ZDDのノードを表す共用体
-// 共用体にしている理由はメモリ使用量効率化のため
+// StateDSTPath: s-t パスのための State
+class StateDSTPath : public StateSTPath {
+protected:
+    typedef MateSTPath MateDSTPath;
 
-struct ZDDNode {
 public:
-    //    intx node_id;
-    intx node_number;
+    StateDSTPath(Graph* graph) : StateSTPath(graph) { }
+
+    virtual ~StateDSTPath() { }
+
+    //virtual void PackMate(ZDDNode* node, Mate* mate);
+    virtual void UnpackMate(ZDDNode* node, Mate* mate, int child_num);
+
+    //virtual std::string GetString(Mate* mate, bool next) const
+    //{
+    //    return MatePrinter<mate_t>::GetStringP("val",
+    //        static_cast<MateDSTPath*>(mate)->frontier, frontier_manager_, next);
+    //}
+
+protected:
+    virtual void UpdateMate(MateDSTPath* mate, int child_num);
+    virtual int CheckTerminalPre(MateDSTPath* mate, int child_num);
+    virtual int CheckTerminalPost(MateDSTPath* mate);
 };
 
-/*union ZDDNode {
-public:
-    struct {
-        //intx dummy1;
-        //intx dummy2;
-        intx pos_sdd;
-        intx pos_fixed;
-        intx pos_frontier;
-        intx pos_v;
-    } p;
-    struct {
-        intx lo;
-        intx hi;
-    } n;
-    };*/
 
 } // the end of the namespace
 
-#endif // ZDDNODE_HPP
+#endif // MATEDSTPATH_HPP

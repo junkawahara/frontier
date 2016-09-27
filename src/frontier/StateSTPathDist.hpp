@@ -123,7 +123,7 @@ public:
     {
         MateSTPathDist* mate = static_cast<MateSTPathDist*>(StateFrontier<MateSTPathDist>::Initialize(root_node));
         int initial_value = 0;
-        mate->Initialize(root_node, &initial_value);
+        mate->Initialize(root_node, initial_value);
         return mate;
     }
 

@@ -58,7 +58,7 @@ inline double Divide<MpInt>(MpInt nume, MpInt deno)
 class SolutionArray {
 public:
     virtual ~SolutionArray() {}
-    virtual void SampleUniformlyRandomly(const std::vector<ZDDNode>& node_array,
+    virtual void SampleUniformlyRandomly(const std::vector<std::pair<intx, intx> >& node_array,
                                          const std::vector<intx>& level_first_array,
                                          std::vector<int>* result) = 0;
 };
@@ -74,48 +74,48 @@ public:
     virtual ~SolutionArrayDerive() {}
 
     // 解の数の計算を行う。overflow チェックは行わない。
-    T ComputeNumberOfSolutions(const std::vector<ZDDNode>& node_array)
+    T ComputeNumberOfSolutions(const std::vector<std::pair<intx, intx> >& node_array)
     {
         solution_array_.resize(node_array.size());
         solution_array_[0] = 0;
         solution_array_[1] = 1;
 
         for (intx i = static_cast<intx>(node_array.size()) - 1; i >= 2; --i) {
-            solution_array_[i] = solution_array_[node_array[i].n.lo]
-                                  + solution_array_[node_array[i].n.hi];
+            solution_array_[i] = solution_array_[node_array[i].first]
+                                  + solution_array_[node_array[i].second];
         }
 
         return solution_array_[2];
     }
 
     // 解の数の計算を行う。計算時に overflow チェックを行う。uintx 型限定
-    uintx ComputeNumberOfSolutionsOF(const std::vector<ZDDNode>& node_array)
+    uintx ComputeNumberOfSolutionsOF(const std::vector<std::pair<intx, intx> >& node_array)
     {
         solution_array_.resize(node_array.size());
         solution_array_[0] = 0;
         solution_array_[1] = 1;
 
         for (intx i = static_cast<intx>(node_array.size()) - 1; i >= 2; --i) {
-            if (solution_array_[node_array[i].n.hi] > UINTX_MAX
-                                    - solution_array_[node_array[i].n.lo]) { // overflow
+            if (solution_array_[node_array[i].second] > UINTX_MAX
+                                    - solution_array_[node_array[i].first]) { // overflow
                 throw std::overflow_error("overflow!");
             }
-            solution_array_[i] = solution_array_[node_array[i].n.lo]
-                                  + solution_array_[node_array[i].n.hi];
+            solution_array_[i] = solution_array_[node_array[i].first]
+                                  + solution_array_[node_array[i].second];
         }
 
         return solution_array_[2];
     }
 
-    virtual void SampleUniformlyRandomly(const std::vector<ZDDNode>& node_array,
+    virtual void SampleUniformlyRandomly(const std::vector<std::pair<intx, intx> >& node_array,
                                          const std::vector<intx>& level_first_array,
                                          std::vector<int>* result)
     {
         intx current_node = 2;
         while (current_node >= 2) {
             bool is_hi = false;
-            T lo = solution_array_[node_array[current_node].n.lo];
-            T hi = solution_array_[node_array[current_node].n.hi];
+            T lo = solution_array_[node_array[current_node].first];
+            T hi = solution_array_[node_array[current_node].second];
             if (lo == 0) {
                 is_hi = true;
             } else if (hi == 0) {
@@ -138,9 +138,9 @@ public:
                         break;
                     }
                 }
-                current_node = node_array[current_node].n.hi;
+                current_node = node_array[current_node].second;
             } else {
-                current_node = node_array[current_node].n.lo;
+                current_node = node_array[current_node].first;
             }
         }
     }
@@ -161,7 +161,7 @@ public:
     }
 
     // This code has not been checked yet!!!
-    static double GetMaximum(const std::vector<ZDDNode>& node_array,
+    static double GetMaximum(const std::vector<std::pair<intx, intx> >& node_array,
                             const std::vector<intx>& level_first_array,
                             const Graph& graph,
                             std::vector<int>* result) {
@@ -176,11 +176,11 @@ public:
         value_array[1] = 0;
 
         for (intx i = static_cast<intx>(node_array.size()) - 1; i >= 2; --i) {
-            double val = value_array[node_array[i].n.hi] +
+            double val = value_array[node_array[i].second] +
                 graph.GetEdge(GetValiableNumber(i, level_first_array)).weight;
 
-            if (value_array[node_array[i].n.lo] >= val) {
-                value_array[i] = value_array[node_array[i].n.lo];
+            if (value_array[node_array[i].first] >= val) {
+                value_array[i] = value_array[node_array[i].first];
                 num_array[i] = 0;
             } else {
                 value_array[i] = val;
@@ -194,9 +194,9 @@ public:
             if (num_array[node] == 1) {
                 result->push_back(node);
                 val2 += graph.GetEdge(GetValiableNumber(node, level_first_array)).weight;
-                node = node_array[node].n.hi;
+                node = node_array[node].second;
             } else {
-                node = node_array[node].n.lo;
+                node = node_array[node].first;
             }
         }
         return val2;

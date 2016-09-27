@@ -87,14 +87,15 @@ public:
         exit(1);
     }
 
-    intx Get(uintx hash_value, State* state, const ZDDNode& node,
-             const std::vector<ZDDNode>& node_array, Mate* mate) const
+    intx Get(uintx hash_value, State* state, const ZDDNode& node, Mate* mate) const
     {
         hash_value %= size_;
 
         while (hash_flush_table_[hash_value] == flush_time_) {
             intx index = hash_table_[hash_value];
-            if (state->Equals(node, node_array[index], mate)) {
+            ZDDNode pnode;
+            pnode.node_number = index;
+            if (state->Equals(node, pnode, mate)) {
                 return index;
             }
             hash_value = (hash_value + 1) % size_;

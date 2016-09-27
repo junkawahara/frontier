@@ -35,7 +35,7 @@
 #include "RBuffer.hpp"
 #include "FrontierManager.hpp"
 #include "FrontierComp.hpp"
-#include "Packer.hpp"
+
 
 namespace frontier_lib {
 
@@ -44,6 +44,7 @@ namespace frontier_lib {
 class Mate {
 public:
     virtual ~Mate() { }
+    virtual void SetOffset() = 0;
     virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2,
                         const FrontierManager& frontier_manager) const = 0;
     virtual intx GetHashValue(const ZDDNode& node, const FrontierManager& frontier_manager) const = 0;
@@ -58,26 +59,30 @@ public:
 private:
     bool use_subsetting_;
     RBuffer<intx> sdd_buffer_;
+    intx s_offset_;
 
 public:
-    MateS() : sdd(2), use_subsetting_(false) { } // 2: root node
+    MateS() : sdd(2), use_subsetting_(false), s_offset_(0) { } // 2: root node
 
     virtual ~MateS() { }
+
+    virtual void SetOffset()
+    {
+        s_offset_ = sdd_buffer_.GetHeadIndex();
+    }
 
     bool IsUseSubsetting()
     {
         return use_subsetting_;
     }
 
-    void SetUseSubsetting(bool use_subsetting, ZDDNode* root_node)
+    void SetUseSubsetting(bool use_subsetting, ZDDNode*)
     {
         use_subsetting_ = use_subsetting;
 
         if (use_subsetting) {
-            intx* p = sdd_buffer_.GetWritePointerAndSeekHead(sizeof(intx));
             assert(sdd == 2);
-            *p = sdd;
-            root_node->p.pos_sdd = 0;
+            sdd_buffer_.WriteAndSeekHead(sdd);
         }
     }
 
@@ -88,11 +93,8 @@ public:
             return true;
         }
 
-        // フロンティアに含まれる各頂点についてmate値が同じかどうか判定
-        intx v1 = *sdd_buffer_.GetPointer(node1.p.pos_sdd);
-        intx v2 = *sdd_buffer_.GetPointer(node2.p.pos_sdd);
-
-        return v1 == v2;
+        return sdd_buffer_.GetValue(s_offset_ + node1.node_number)
+            == sdd_buffer_.GetValue(s_offset_ + node2.node_number);
     }
 
     virtual intx GetHashValue(const ZDDNode& node, const FrontierManager&) const
@@ -101,18 +103,16 @@ public:
             return 0;
         }
 
-        return *sdd_buffer_.GetPointer(node.p.pos_sdd);
+        return sdd_buffer_.GetValue(s_offset_ + node.node_number);
     }
 
-    virtual void PackMate(ZDDNode* node, const FrontierManager&)
+    virtual void PackMate(ZDDNode*, const FrontierManager&)
     {
         if (!use_subsetting_) {
             return;
         }
 
-        intx* p = sdd_buffer_.GetWritePointerAndSeekHead(sizeof(intx));
-        *p = sdd;
-        node->p.pos_sdd = sdd_buffer_.GetHeadIndex() - sizeof(intx);
+        sdd_buffer_.WriteAndSeekHead(sdd);
     }
 
     virtual void UnpackMate(ZDDNode* , int child_num, const FrontierManager&)
@@ -121,10 +121,10 @@ public:
             return;
         }
 
-        sdd = *sdd_buffer_.GetReadPointer(0);
+        sdd = sdd_buffer_.GetValueFromTail();
 
         if (child_num == 1) {
-            sdd_buffer_.SeekTail(sizeof(intx));
+            sdd_buffer_.SeekTail(1);
         }
     }
 
@@ -134,9 +134,15 @@ public:
             return;
         }
 
-        sdd_buffer_.BackHead(sizeof(intx));
+        sdd_buffer_.BackHead(1);
     }
 };
+
+}
+
+#include "State.hpp"
+
+namespace frontier_lib {
 
 template <typename FT>
 class MateF : public MateS {
@@ -144,9 +150,10 @@ public:
     FT* frontier;
 private:
     RBuffer<FT> frontier_buffer_;
+    intx f_offset_;
 
 public:
-    MateF(State* state)
+    MateF(State* state) : f_offset_(0)
     {
         frontier = new FT[state->GetNumberOfVertices() + 1];
     }
@@ -156,6 +163,12 @@ public:
         delete[] frontier;
     }
 
+    virtual void SetOffset()
+    {
+        MateS::SetOffset();
+        f_offset_ = frontier_buffer_.GetHeadIndex();
+    }
+
     virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2,
                 const FrontierManager& frontier_manager) const
     {
@@ -163,10 +176,17 @@ public:
             return false;
         }
         // フロンティアに含まれる各頂点についてmate値が同じかどうか判定
-        const FT* p1 = frontier_buffer_.GetPointer(node1.p.pos_frontier);
-        const FT* p2 = frontier_buffer_.GetPointer(node2.p.pos_frontier);
-
-        return memcmp(p1, p2, frontier_manager.GetNextFrontierSize() * sizeof(FT)) == 0;        
+        int frontier_size = frontier_manager.GetNextFrontierSize();
+        for (int i = 0; i < frontier_size; ++i) {
+            //FT f1 = frontier_buffer_.GetValue(f_offset_ + node1.node_number * frontier_size + i);
+            //FT f2 = frontier_buffer_.GetValue(f_offset_ + node2.node_number * frontier_size + i);
+            //std::cout << "compare: " << f1 << ", " << f2 << std::endl;
+            if (frontier_buffer_.GetValue(f_offset_ + node1.node_number * frontier_size + i)
+                != frontier_buffer_.GetValue(f_offset_ + node2.node_number * frontier_size + i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     virtual intx GetHashValue(const ZDDNode& node, const FrontierManager& frontier_manager) const
@@ -175,32 +195,61 @@ public:
 
         hash_value = MateS::GetHashValue(node, frontier_manager);
 
-        const byte* p = reinterpret_cast<const byte*>(frontier_buffer_.GetPointer(node.p.pos_frontier));
-        for (uint i = 0; i < frontier_manager.GetNextFrontierSize() * sizeof(FT); ++i) {
-            hash_value = hash_value * 15284356289ll + p[i];
+        int frontier_size = frontier_manager.GetNextFrontierSize();
+        //if (sizeof(FT) == sizeof(uintx)) {
+        //    for (int i = 0; i < frontier_size; ++i) {
+        //        hash_value = hash_value * 15284356289ll
+        //            + reinterpret_cast<uintx>(frontier_buffer_.GetValue(f_offset_ + node.node_number * frontier_size + i));
+        //    }
+        //} else {
+            for (int i = 0; i < frontier_size; ++i) {
+                FT val = frontier_buffer_.GetValue(f_offset_ + node.node_number * frontier_size + i);
+                hash_value = hash_value * 3161391051631ll + Translate(val);
+            }
+        //}
+        return hash_value;
+    }
+
+    template<typename T>
+    inline uintx Translate(T val) const
+    {
+        uintx hash_value = 0;
+        for (uint j = 0; j < sizeof(T); ++j) {
+            hash_value = hash_value * 15284356289ll + *(reinterpret_cast<byte*>(&val) + j);
         }
         return hash_value;
+    }
+
+    inline uintx Translate(mate_t val) const
+    {
+        return static_cast<uintx>(val);
+    }
+
+    inline uintx Translate(uint val) const
+    {
+        return static_cast<uintx>(val);
+    }
+
+    inline uintx Translate(uintx val) const
+    {
+        return static_cast<uintx>(val);
     }
 
     virtual void PackMate(ZDDNode* node, const FrontierManager& frontier_manager)
     {
         MateS::PackMate(node, frontier_manager);
 
-        int frontier_size = frontier_manager.GetNextFrontierSize();
-        FT* p = frontier_buffer_.GetWritePointerAndSeekHead(frontier_size);
-        for (int i = 0; i < frontier_size; ++i) {
-            p[i] = frontier[frontier_manager.GetNextFrontierValue(i)];
+        for (int i = 0; i < frontier_manager.GetNextFrontierSize(); ++i) {
+            frontier_buffer_.WriteAndSeekHead(frontier[frontier_manager.GetNextFrontierValue(i)]);
         }
-        node->p.pos_frontier = frontier_buffer_.GetHeadIndex() - frontier_size;
     }
 
     virtual void UnpackMate(ZDDNode* node, int child_num, const FrontierManager& frontier_manager)
     {
         MateS::UnpackMate(node, child_num, frontier_manager);
 
-        FT* p = frontier_buffer_.GetReadPointer(0);
         for (int i = 0; i < frontier_manager.GetPreviousFrontierSize(); ++i) {
-            frontier[frontier_manager.GetPreviousFrontierValue(i)] = p[i];
+            frontier[frontier_manager.GetPreviousFrontierValue(i)] = frontier_buffer_.GetValueFromTail(i);
         }
 
         if (child_num == 1) {
@@ -221,77 +270,118 @@ class MateFD : public MateF<FT> {
 public:
     DT data;
 private:
-    FixedPacker<DT> fixed_packer_;
+    RBuffer<DT> dt_buffer_;
+    intx d_offset_;
 
 public:
-    MateFD(State* state) : MateF<FT>(state) { }
+    MateFD(State* state) : MateF<FT>(state), d_offset_(0) { }
 
     virtual ~MateFD() { }
 
-    virtual void Initialize(ZDDNode* root_node, DT* initial_data)
+    virtual void SetOffset()
     {
-        fixed_packer_.Pack(root_node, initial_data);
+        MateF<FT>::SetOffset();
+        d_offset_ = dt_buffer_.GetHeadIndex();
+    }
+
+    virtual void Initialize(ZDDNode* /*root_node*/, DT initial_data)
+    {
+        dt_buffer_.WriteAndSeekHead(initial_data);
     }
 
     virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2,
                 const FrontierManager& frontier_manager) const
     {
-        return MateF<FT>::Equals(node1, node2, frontier_manager) && fixed_packer_.Equals(node1, node2);
+        if (!MateF<FT>::Equals(node1, node2, frontier_manager)) {
+            return false;
+        }
+        return dt_buffer_.GetValue(d_offset_ + node1.node_number)
+            == dt_buffer_.GetValue(d_offset_ + node2.node_number);
     }
 
     virtual intx GetHashValue(const ZDDNode& node, const FrontierManager& frontier_manager) const
     {
-        return MateF<FT>::GetHashValue(node, frontier_manager) * 15284356289ll + fixed_packer_.GetHashValue(node);
+        uintx hash_value = MateF<FT>::GetHashValue(node, frontier_manager);
+        DT dt = dt_buffer_.GetValue(d_offset_ + node.node_number);
+        for (uint i = 0; i < sizeof(DT); ++i) {
+            hash_value = hash_value * 15284356289ll + *(reinterpret_cast<byte*>(&dt) + i);
+        }
+        return hash_value;
     }
 
     virtual void PackMate(ZDDNode* node, const FrontierManager& frontier_manager)
     {
         MateF<FT>::PackMate(node, frontier_manager);
-        fixed_packer_.Pack(node, &data);
+        dt_buffer_.WriteAndSeekHead(data);
     }
 
     virtual void UnpackMate(ZDDNode* node, int child_num, const FrontierManager& frontier_manager)
     {
         MateF<FT>::UnpackMate(node, child_num, frontier_manager);
-        fixed_packer_.Unpack(node, &data);
+        data = dt_buffer_.GetValueFromTail();
 
         if (child_num == 1) {
-            fixed_packer_.SeekTail();
+            dt_buffer_.SeekTail(1);
         }
     }
 
     virtual void Revert(const FrontierManager& frontier_manager)
     {
         MateF<FT>::Revert(frontier_manager);
-        fixed_packer_.Revert();
+        dt_buffer_.BackHead(1);
     }
 };
-
 
 template <typename FT, typename DT, typename VT>
 class MateFDV1 : public MateFD<FT, DT> {
 public:
-    std::vector<VT>* varray1;
+    VT* varray1;
+    int varray1_size;
+    static const int MAX_VARRAY1_SIZE = 65536;
 private:
-    std::vector<std::vector<VT>*> v_buffer_array1_;
+    //std::vector<std::vector<VT>*> v_buffer_array1_;
+    RBuffer<VT> vt1_buffer_;
+    RBuffer<uintx> pos_buffer_;
+    intx vt1_pos_offset_;
+    intx vt1_buf_offset_;
+    intx prev_size_;
+    //intx v1_prev_offset_;
 
 public:
-    MateFDV1(State* state) : MateFD<FT, DT>(state) { }
+    MateFDV1(State* state) : MateFD<FT, DT>(state), vt1_pos_offset_(0), prev_size_(0)/*, v1_prev_offset_(-9999)*/ {
+        //varray1 = new std::vector<VT>();
+        varray1 = new VT[MAX_VARRAY1_SIZE];
+    }
 
     virtual ~MateFDV1() { }
 
-    virtual void Initialize(ZDDNode* root_node, DT* initial_data)
+    virtual void SetOffset()
     {
-        MateFD<FT, DT>::Initialize(root_node, initial_data);
-        root_node->p.pos_v = 0;
-        v_buffer_array1_.push_back(new std::vector<VT>());
+        MateFD<FT, DT>::SetOffset();
+        //v1_prev_offset_ = vt1_pos_offset_;
+        //vt1_pos_offset_ = static_cast<intx>(v_buffer_array1_.size());//dt_buffer_.GetTailIndex();
+        vt1_pos_offset_ = static_cast<intx>(pos_buffer_.GetHeadIndex());
+        vt1_buf_offset_ = static_cast<intx>(vt1_buffer_.GetHeadIndex());
+        prev_size_ = 0;
     }
 
-    virtual void Initialize(ZDDNode* root_node, DT* initial_data, std::vector<VT>* initial_varray1)
+    virtual void Initialize(ZDDNode* root_node, DT initial_data)
     {
         MateFD<FT, DT>::Initialize(root_node, initial_data);
-        root_node->p.pos_v = 0;
-        v_buffer_array1_.push_back(initial_varray1);
+        //root_node->node_number = 0;
+        //v_buffer_array1_.push_back(new std::vector<VT>());
+        pos_buffer_.WriteAndSeekHead(0); // The initial size is 0.
+    }
+
+    virtual void Initialize(ZDDNode* root_node, DT initial_data, const std::vector<VT>& initial_varray1)
+    {
+        MateFD<FT, DT>::Initialize(root_node, initial_data);
+        //root_node->node_number = 0;
+        for (size_t i = 0; i < initial_varray1.size(); ++i) {
+            vt1_buffer_.WriteAndSeekHead(initial_varray1[i]);
+        }
+        pos_buffer_.WriteAndSeekHead(initial_varray1.size());
+        //v_buffer_array1_.push_back(initial_varray1);
     }
 
     virtual bool Equals(const ZDDNode& node1, const ZDDNode& node2,
@@ -300,11 +390,15 @@ public:
         if (!MateFD<FT, DT>::Equals(node1, node2, frontier_manager)) {
             return false;
         }
-        if (v_buffer_array1_[node1.p.pos_v]->size() != v_buffer_array1_[node2.p.pos_v]->size()) {
+        uintx size1 = GetSize(vt1_pos_offset_ + node1.node_number);
+        uintx size2 = GetSize(vt1_pos_offset_ + node2.node_number);
+        if (size1 != size2) {
             return false;
         }
-        for (uint i = 0; i < v_buffer_array1_[node1.p.pos_v]->size(); ++i) {
-            if ((*v_buffer_array1_[node1.p.pos_v])[i] != (*v_buffer_array1_[node2.p.pos_v])[i]) {
+        uintx pos1 = vt1_buf_offset_ + GetPos(vt1_pos_offset_ + node1.node_number);
+        uintx pos2 = vt1_buf_offset_ + GetPos(vt1_pos_offset_ + node2.node_number);
+        for (uint i = 0; i < size1; ++i) {
+            if (vt1_buffer_.GetValue(pos1 + i) != vt1_buffer_.GetValue(pos2 + i)) {
                 return false;
             }
         }
@@ -314,8 +408,10 @@ public:
     virtual intx GetHashValue(const ZDDNode& node, const FrontierManager& frontier_manager) const
     {
         intx hash_value = MateFD<FT, DT>::GetHashValue(node, frontier_manager);
-        for (uint i = 0; i < v_buffer_array1_[node.p.pos_v]->size(); ++i) {
-            hash_value = hash_value * 15284356289ll + (*v_buffer_array1_[node.p.pos_v])[i];
+        uintx size = GetSize(vt1_pos_offset_ + node.node_number);
+        uintx pos = vt1_buf_offset_ + GetPos(vt1_pos_offset_ + node.node_number);
+        for (uint i = 0; i < size; ++i) {
+            hash_value = hash_value * 15284356289ll + vt1_buffer_.GetValue(pos + i);
         }
         return hash_value;
     }
@@ -323,22 +419,69 @@ public:
     virtual void PackMate(ZDDNode* node, const FrontierManager& frontier_manager)
     {
         MateFD<FT, DT>::PackMate(node, frontier_manager);
-        node->p.pos_v = static_cast<intx>(v_buffer_array1_.size());
-        v_buffer_array1_.push_back(varray1);        
+        //node->node_number = static_cast<intx>(v_buffer_array1_.size());
+        //v_buffer_array1_.push_back(varray1);
+        for (int i = 0; i < varray1_size; ++i) {
+            vt1_buffer_.WriteAndSeekHead(varray1[i]);
+        }
+        if (vt1_pos_offset_ < pos_buffer_.GetHeadIndex()) {
+            pos_buffer_.WriteAndSeekHead(pos_buffer_.Peek() + varray1_size);
+        } else {
+            pos_buffer_.WriteAndSeekHead(varray1_size);
+        }
     }
 
     virtual void UnpackMate(ZDDNode* node, int child_num, const FrontierManager& frontier_manager)
     {
         MateFD<FT, DT>::UnpackMate(node, child_num, frontier_manager);
-        varray1 = new std::vector<VT>(*v_buffer_array1_[node->p.pos_v]);
+        //varray1 = new std::vector<VT>(*v_buffer_array1_[v1_prev_offset_ + node->node_number]);
+        uintx size = pos_buffer_.GetValueFromTail(0);
+        for (uintx i = 0; i < size - prev_size_; ++i) {
+            varray1[i] = vt1_buffer_.GetValueFromTail(i);
+        }
+        varray1_size = size - prev_size_;
+        if (child_num == 1) {
+            if (size - prev_size_ > 0) {
+                vt1_buffer_.SeekTail(size - prev_size_);
+            }
+            pos_buffer_.SeekTail(1);
+            prev_size_ = size;
+        }
     }
 
     virtual void Revert(const FrontierManager& frontier_manager)
     {
         MateFD<FT, DT>::Revert(frontier_manager);
 
-        delete v_buffer_array1_.back();
-        v_buffer_array1_.resize(v_buffer_array1_.size() - 1);
+        //delete v_buffer_array1_.back();
+        //v_buffer_array1_.resize(v_buffer_array1_.size() - 1);
+        uintx size = pos_buffer_.Peek();
+        if (vt1_pos_offset_ < pos_buffer_.GetHeadIndex()) {
+            uintx c = pos_buffer_.Peek(1);
+            assert(size >= c);
+            size -= c;
+        }
+        vt1_buffer_.BackHead(size);
+        pos_buffer_.BackHead(1);
+    }
+
+private:
+    uintx GetPos(intx index) const
+    {
+        if (index > vt1_pos_offset_) {
+            return pos_buffer_.GetValue(index - 1);
+        } else {
+            return 0;
+        }
+    }
+
+    uintx GetSize(intx index) const
+    {
+        if (index > vt1_pos_offset_) {
+            return pos_buffer_.GetValue(index) - pos_buffer_.GetValue(index - 1);
+        } else {
+            return pos_buffer_.GetValue(index);
+        }
     }
 };
 
@@ -348,19 +491,28 @@ public:
     std::vector<VT2>* varray2;
 private:
     std::vector<std::vector<VT2>*> v_buffer_array2_;
+    intx v2_offset_;
+    intx v2_prev_offset_;
 
 public:
-    MateFDV2(State* state) : MateFDV1<FT, DT, VT1>(state) { }
+    MateFDV2(State* state) : MateFDV1<FT, DT, VT1>(state), v2_offset_(0), v2_prev_offset_(-9999) { }
 
     virtual ~MateFDV2() { }
 
-    virtual void Initialize(ZDDNode* root_node, DT* initial_data)
+    virtual void SetOffset()
+    {
+        MateFDV1<FT, DT, VT1>::SetOffset();
+        v2_prev_offset_ = v2_offset_;
+        v2_offset_ = static_cast<intx>(v_buffer_array2_.size());//dt_buffer_.GetTailIndex();
+    }
+
+    virtual void Initialize(ZDDNode* root_node, DT initial_data)
     {
         MateFDV1<FT, DT, VT1>::Initialize(root_node, initial_data);
         v_buffer_array2_.push_back(new std::vector<VT2>());
     }
 
-    virtual void Initialize(ZDDNode* root_node, DT* initial_data, std::vector<VT1>* initial_varray1,
+    virtual void Initialize(ZDDNode* root_node, DT initial_data, std::vector<VT1>* initial_varray1,
                             std::vector<VT2>* initial_varray2)
     {
         MateFDV1<FT, DT, VT1>::Initialize(root_node, initial_data, initial_varray1);
@@ -373,11 +525,11 @@ public:
         if (!MateFDV1<FT, DT, VT1>::Equals(node1, node2, frontier_manager)) {
             return false;
         }
-        if (v_buffer_array2_[node1.p.pos_v]->size() != v_buffer_array2_[node2.p.pos_v]->size()) {
+        if (v_buffer_array2_[v2_offset_ + node1.node_number]->size() != v_buffer_array2_[v2_offset_ + node2.node_number]->size()) {
             return false;
         }
-        for (uint i = 0; i < v_buffer_array2_[node1.p.pos_v]->size(); ++i) {
-            if ((*v_buffer_array2_[node1.p.pos_v])[i] != (*v_buffer_array2_[node2.p.pos_v])[i]) {
+        for (uint i = 0; i < v_buffer_array2_[v2_offset_ + node1.node_number]->size(); ++i) {
+            if ((*v_buffer_array2_[v2_offset_ + node1.node_number])[i] != (*v_buffer_array2_[v2_offset_ + node2.node_number])[i]) {
                 return false;
             }
         }
@@ -387,8 +539,8 @@ public:
     virtual intx GetHashValue(const ZDDNode& node, const FrontierManager& frontier_manager) const
     {
         intx hash_value = MateFDV1<FT, DT, VT1>::GetHashValue(node, frontier_manager);
-        for (uint i = 0; i < v_buffer_array2_[node.p.pos_v]->size(); ++i) {
-            hash_value = hash_value * 15284356289ll + (*v_buffer_array2_[node.p.pos_v])[i];
+        for (uint i = 0; i < v_buffer_array2_[v2_offset_ + node.node_number]->size(); ++i) {
+            hash_value = hash_value * 15284356289ll + (*v_buffer_array2_[v2_offset_ + node.node_number])[i];
         }
         return hash_value;
     }
@@ -396,14 +548,14 @@ public:
     virtual void PackMate(ZDDNode* node, const FrontierManager& frontier_manager)
     {
         MateFDV1<FT, DT, VT1>::PackMate(node, frontier_manager);
-        node->p.pos_v = static_cast<intx>(v_buffer_array2_.size());
-        v_buffer_array2_.push_back(varray2);        
+        //node->node_number = static_cast<intx>(v_buffer_array2_.size());
+        v_buffer_array2_.push_back(varray2);
     }
 
     virtual void UnpackMate(ZDDNode* node, int child_num, const FrontierManager& frontier_manager)
     {
         MateFDV1<FT, DT, VT1>::UnpackMate(node, child_num, frontier_manager);
-        varray2 = new std::vector<VT2>(*v_buffer_array2_[node->p.pos_v]);
+        varray2 = new std::vector<VT2>(*v_buffer_array2_[v2_prev_offset_ + node->node_number]);
     }
 
     virtual void Revert(const FrontierManager& frontier_manager)

@@ -168,6 +168,10 @@ public:
                 }
             }
         }
+        vertex_weight_array_.resize(number_of_vertices_ + 1);
+        for (int i = 0; i < number_of_vertices_ + 1; ++i) {
+            vertex_weight_array_[i] = 1;
+        }
     }
 
     virtual void SetWeightToEach(std::istream& ist)
@@ -211,6 +215,7 @@ public:
                 }
             }
         }
+        is_use_vertex_weight_ = true;
     }
 
     virtual int GetVertexWeight(int v) const
@@ -220,7 +225,7 @@ public:
 
     virtual bool IsUsingVertexWeight() const
     {
-        return vertex_weight_array_.size() > 0;
+        return is_use_vertex_weight_;
     }
 
     virtual void PrintAdjacencyList(std::ostream& ost) const
@@ -275,12 +280,21 @@ public:
     virtual void PrintForGraphviz(std::ostream& ost,
         const std::vector<int>& bold_edge_list) const
     {
+        if (is_directed_) {
+            ost << "di";
+        }
         ost << "graph G {" << std::endl;
         for (int i = 1; i <= number_of_vertices_; ++i) {
             ost << "\t" << i << ";" << std::endl;
         }
         for (uint i = 0; i < edge_array_.size(); ++i) {
-            ost << "\t" << edge_array_[i].src << " -- " << edge_array_[i].dest
+            ost << "\t" << edge_array_[i].src;
+            if (is_directed_) {
+                ost << " -> ";
+            } else {
+                ost << " -- ";
+            }
+            ost << edge_array_[i].dest
                 << " [label=" << (i + 1);
             if (find(bold_edge_list.begin(), bold_edge_list.end(), i + 1) != bold_edge_list.end()) {
                 ost << ", color=red, penwidth=5";

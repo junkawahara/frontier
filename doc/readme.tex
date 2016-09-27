@@ -1,7 +1,7 @@
 \documentclass{jsarticle}
 \usepackage[dvipdfmx]{graphicx}
 
-\title{フロンティア法プログラム version 1.0.0}
+\title{フロンティア法プログラム version 1.0.1}
 
 \begin{document}
 
@@ -69,6 +69,8 @@ make
 ./configure --enable-32bit
 make
 \end{verbatim}
+
+64ビットCPU環境が一般的になってきたため、32ビット版の動作はサポートしない。
 
 \texttt{src/frontier} ディレクトリに \texttt{frontier}、 \texttt{enumpath} プログラムと
 \texttt{libfrontier.a} ライブラリファイルが生成される。
@@ -533,6 +535,7 @@ BigIntegerが使用される。
 
 \begin{itemize}
 \item ver 1.0.0 2016/3/19 新版公開
+\item ver 1.0.1 2016/9/27 有向s-tパスに対応
 \end{itemize}
 
 \end{document}
