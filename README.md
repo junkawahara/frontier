@@ -76,12 +76,12 @@ run the following command:
 The result of Standard output (stdout):
 
 ```
-\#1:
+#1:
 2:3,4
-\#2:
+#2:
 3:5,5
 4:5,6
-\#3:
+#3:
 5:7,8
 ...
 ```
@@ -91,8 +91,8 @@ The above output represents a ZDD. See the below section.
 The result of Standard error (stderr):
 
 ```
-\# of nodes of ZDD = 45
-\# of solutions = 3102
+# of nodes of ZDD = 45
+# of solutions = 3102
 ```
 
 We find that the number of nodes (before reducing) is 45, that of subgraphs is 3,102.
@@ -106,9 +106,9 @@ To reduce the ZDD, use ```-r``` option.
 Output:
 
 ```
-\# of nodes of ZDD = 45
-\# of nodes of reduced ZDD = 38
-\# of solutions = 3102
+# of nodes of ZDD = 45
+# of nodes of reduced ZDD = 38
+# of solutions = 3102
 ```
 
 To construct a ZDD for s-t paths, use ```-t stpath``` option.
@@ -120,7 +120,8 @@ and t is right-bottom corner.
 ```
 
 The start of s-t paths (s) can be specified by ```-s``` and
-the end can be specified by ```-t```.
+the end (t) can be specified by ```-t```. The following is
+for s-t paths where s = 2 and t = 8.
 
 ```
 ./makegrid -d 3 3 | ./frontier -t stpath -s 2 -e 8
@@ -137,8 +138,8 @@ Otherwise, the adjacent list format is used.
 In the adjacent list format, put indices of vertices which is adjacent to vertex i
 with space separators in line i.
 
-In the edge list format, put the number of vertices in the first line.
-We can omit the first line.
+In the edge list format, put the number of vertices in the first line
+(we can omit the first line).
 Then, put the source vertex index and the edge vertex index of each edge
 in the second or later line.
 
@@ -162,8 +163,8 @@ and so on.
 ### Input format for directed graphs
 
 For directed graphs, only the edge list format is supported.
-In each line, the first vertex is the source and the second vertex is
-the destination of each directed edge.
+Each line corresponds to the directed edge
+whose source is the first number and whose destination is the second one.
 
 
 ## Output format
@@ -173,12 +174,12 @@ the destination of each directed edge.
 The format of an output ZDD is as follows:
 
 ```
-\#1:
+#1:
 2:3,4
-\#2:
+#2:
 3:5,5
 4:5,6
-\#3:
+#3:
 5:7,8
 ...
 ```
@@ -187,8 +188,9 @@ The line ```#i:``` means the beginning of the i-th edge variable.
 ```p:q,r``` represents that the node pointed by the 0-arc of node ```p```
 is ```q```, and that by the 1-arc is ```r```.
 0-terminal is the number 0, 1-terminal is the number 1,
-and non-terminal is larger than 2.
-The node number is represented in decimal digit, but by giving
+and non-terminal is larger than 1.
+The node number is represented in decimal digit
+By giving
 ```--hex``` option it is represented in hex form.
 By giving ```-r``` option, the reduced ZDD is output.
 
@@ -231,11 +233,11 @@ Output:
 ```
 
 One line represents one edge set. For example, ```1 3 5 6 7 8 11 12``` represents
-edge set e_1, e_3,...,e_12.
+edge set e_1, e_3,...,e_12, which constructs an s-t path.
 
 Example of uniformly random sampling of s-t paths (10 paths)
 
 ```
-./makegrid 3 | ./frontier -t stpath -n --sample - 20
+./makegrid 3 | ./frontier -t stpath -n --sample - 10
 ```
 
