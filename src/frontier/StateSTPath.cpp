@@ -108,7 +108,7 @@ int StateSTPath::CheckTerminalPre(MateSTPath* mate, int child_num)
         } else if (mate->frontier[edge.src] == edge.dest) {
             // サイクルが完成
 
-            if (!STEnteringFrontier()) { // s or t がまだフロンティアに入っていない
+            if (!IsCycle() && !STEnteringFrontier()) { // s or t がまだフロンティアに入っていない
                 return 0;
             }
 
